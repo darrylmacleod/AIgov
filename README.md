@@ -1,6 +1,6 @@
-# AIGov — AI Governance & Data Flow Builder
+# AIGov - AI Governance & Data Flow Builder
 
-AIGov is a fully self-contained, browser-based tool for mapping and documenting AI system data flows with inline governance guidance. Designed for AI governance leads, risk managers, privacy engineers, and compliance teams who need to visualise how data moves through AI pipelines, identify regulatory obligations at each touchpoint, and produce audit-ready documentation.
+AIGov is a fully self-contained, browser-based tool for mapping and documenting AI system data flows with inline governance guidance. Designed for AI governance leads, risk managers, privacy engineers, and compliance teams who need to visualize how data moves through AI pipelines, identify regulatory obligations at each touchpoint, and produce audit-ready documentation.
 
 No installation. No server. No dependencies. Open the HTML file in any modern browser and start diagramming.
 
@@ -8,7 +8,7 @@ No installation. No server. No dependencies. Open the HTML file in any modern br
 
 ## Why This Exists
 
-Regulators and standards bodies now require organisations deploying AI systems to maintain accurate documentation of how data enters, transforms, and exits their AI pipelines. The EU AI Act mandates technical documentation, data governance records, and logging plans for high-risk systems (Arts. 10–12). NIST AI RMF asks teams to map, measure, and govern AI risk across the full system lifecycle. GDPR requires data protection impact assessments when AI processes personal data at scale (Art. 35). ISO 42001 requires an AI Management System with documented controls.
+Regulators and standards bodies now require organizations deploying AI systems to maintain accurate documentation of how data enters, transforms, and exits their AI pipelines. The EU AI Act mandates technical documentation, data governance records, and logging plans for high-risk systems (Arts. 10–12). NIST AI RMF asks teams to map, measure, and govern AI risk across the full system lifecycle. GDPR requires data protection impact assessments when AI processes personal data at scale (Art. 35). ISO 42001 requires an AI Management System with documented controls.
 
 Most diagramming tools are general-purpose — they don't know what a vector store is, they won't flag that an inference response flowing into an automated decision triggers GDPR Art. 22 rights, and they can't surface the specific EU AI Act article that applies when you place a Foundation Model on the canvas.
 
@@ -50,13 +50,13 @@ Every component has a Risk Classification field in the Properties panel with opt
 
 ### Governance Boundary Zones
 
-The **Boundary Zones** section in the sidebar lets you draw labelled scope rectangles directly on the canvas by dragging. Zones sit below all components, do not block interaction, and are independently moveable by dragging their header bar.
+The **Boundary Zones** section in the sidebar lets you draw labeled scope rectangles directly on the canvas by dragging. Zones sit below all components, do not block interaction, and are independently movable by dragging their header bar.
 
 | Zone | Colour | Governance Context |
 |---|---|---|
 | High-Risk AI System | Red | EU AI Act Arts. 6, 9–15 conformity obligations; conformity assessment required before market placement. ISO 42001 Clause 6.1 risk assessment; A.5.2 AI impact assessment |
 | PII Processing Zone | Orange | GDPR Art. 35 DPIA likely required; data minimisation and purpose limitation controls apply. ISO 42001 A.6.2.7 privacy by design controls |
-| Trust Boundary | Indigo | Authentication, authorisation, and input validation controls required at all crossing points. ISO 42001 A.6.2.8 security controls; A.4.4 context documentation |
+| Trust Boundary | Indigo | Authentication, authorization, and input validation controls required at all crossing points. ISO 42001 A.6.2.8 security controls; A.4.4 context documentation |
 | Third-Party / External | Purple | NIST AI RMF GOVERN 5 vendor risk assessment; contractual controls and ongoing monitoring. ISO 42001 A.10.2–A.10.4 third-party obligations, supply chain, and procurement |
 | Human Oversight Zone | Green | EU AI Act Art. 14 meaningful oversight design; log all interventions. ISO 42001 A.9.3 oversight controls; A.3.2 roles and responsibilities |
 
@@ -174,7 +174,7 @@ Document your diagram using the 📝 Narrative button. Describe the system purpo
 
 ### Documenting High-Risk AI Systems
 
-For systems classified as high-risk under EU AI Act Annex III (biometric categorisation, credit scoring, employment screening, critical infrastructure, law enforcement, etc.):
+For systems classified as high-risk under EU AI Act Annex III (biometric categorization, credit scoring, employment screening, critical infrastructure, law enforcement, etc.):
 
 1. Draw a **High-Risk AI System** zone around the in-scope components
 2. Set Risk Classification to "High Risk (EU AI Act)" on each model component
@@ -206,9 +206,9 @@ The tool is implemented as a single HTML file (~1,900 lines) with no external de
 
 **Edge routing** — Orthogonal (rectilinear) paths computed from source and target port directions. L-bend when ports are perpendicular; Z-bend through the axis midpoint when both ports face the same direction. Edge label backgrounds are sized using `SVGTextElement.getComputedTextLength()` for accurate fit across variable-width characters and emoji.
 
-**History** — Structural state (nodes, edges, zones) is JSON-serialised into a 50-entry ring buffer on every mutation. Drags snapshot state at start and commit the entry only if movement exceeds a 2px threshold, avoiding spurious history entries from clicks.
+**History** — Structural state (nodes, edges, zones) is JSON-serialized into a 50-entry ring buffer on every mutation. Drags snapshot state at start and commit the entry only if movement exceeds a 2px threshold, avoiding spurious history entries from clicks.
 
-**Export** — The SVG clone strips all interactive elements before serialisation. PNG export renders at 2× via Canvas. All Blob URLs are revoked after download.
+**Export** — The SVG clone strips all interactive elements before serialization. PNG export renders at 2× via Canvas. All Blob URLs are revoked after download.
 
 **Save/Load** — Full diagram state as JSON. On load, a validation pass checks component types, coordinates, and edge reference integrity before mutating state. Node/edge/zone ID counters are recovered using `reduce()` rather than spread-into-Math.max to avoid call-stack overflow on large diagrams.
 
@@ -218,7 +218,7 @@ Tested in Chrome 120+, Firefox 121+, Edge 120+, and Safari 17+.
 
 ## Governance Framework Context
 
-AIGov supports documentation relevant to the following frameworks. Diagrams produced should be reviewed by qualified practitioners as part of a formal governance programme.
+AIGov supports documentation relevant to the following frameworks. Diagrams produced should be reviewed by qualified practitioners as part of a formal governance program.
 
 ### EU AI Act (Regulation 2024/1689)
 
@@ -244,14 +244,14 @@ AIGov supports documentation relevant to the following frameworks. Diagrams prod
 
 | Function | Relevance |
 |---|---|
-| GOVERN | Organisational accountability structures, policies, roles, and culture for AI risk management |
-| MAP | Context establishment, AI risk identification, and categorisation across the system lifecycle |
+| GOVERN | Organizational accountability structures, policies, roles, and culture for AI risk management |
+| MAP | Context establishment, AI risk identification, and categorization across the system lifecycle |
 | MEASURE | Analysis, assessment, benchmarking, and monitoring of AI risk using qualitative and quantitative methods |
 | MANAGE | Risk response, treatment, recovery, and residual risk decisions |
 
 ### GDPR (where personal data is processed)
 
-- **Art. 5** — Principles: lawfulness, purpose limitation, data minimisation, accuracy, storage limitation, integrity and accountability
+- **Art. 5** — Principles: lawfulness, purpose limitation, data minimization, accuracy, storage limitation, integrity and accountability
 - **Art. 6 / 9** — Lawful basis for processing personal / special category data
 - **Art. 17** — Right to erasure — affects vector stores and training datasets containing personal data
 - **Art. 22** — Automated individual decision-making — right to human review, explanation, and to contest
@@ -260,14 +260,14 @@ AIGov supports documentation relevant to the following frameworks. Diagrams prod
 
 ### ISO/IEC 42001:2023
 
-ISO/IEC 42001 specifies requirements for an AI Management System (AIMS) and a set of controls in Annex A that organisations can select based on their AI risk profile. AIGov surfaces specific Annex A controls in-context throughout the Properties panel.
+ISO/IEC 42001 specifies requirements for an AI Management System (AIMS) and a set of controls in Annex A that organizations can select based on their AI risk profile. AIGov surfaces specific Annex A controls in-context throughout the Properties panel.
 
 **Core Clauses**
 
 - **Clause 3.2** — Roles and responsibilities — assign and document accountability for AI system governance
-- **Clause 4.4** — Context of the organisation — document computing resources and environmental constraints affecting AI systems
+- **Clause 4.4** — Context of the organization — document computing resources and environmental constraints affecting AI systems
 - **Clause 5.3** — AI impact assessment process — assess and treat impacts on individuals and society before deployment
-- **Clause 6.1** — AI risk assessment process — identify, analyse, and evaluate risks associated with AI systems
+- **Clause 6.1** — AI risk assessment process — identify, analyze, and evaluate risks associated with AI systems
 - **Clause 8.2** — AI system impact assessment — structured assessment of AI system impacts proportionate to risk
 
 **Annex A Controls (as referenced in AIGov guidance)**
@@ -285,7 +285,7 @@ ISO/IEC 42001 specifies requirements for an AI Management System (AIMS) and a se
 | A.6.2.9 | Safety controls and fail-safe mechanisms |
 | A.6.3 | Data management — governance across the full data lifecycle |
 | A.6.3.2 | Data acquisition — documentation of sources, consent, and quality |
-| A.6.3.3 | Data preparation — cleaning, labelling, transformation records |
+| A.6.3.3 | Data preparation — cleaning, labeling, transformation records |
 | A.6.3.5 | Data quality — criteria, validation, and verification |
 | A.6.4.2 | AI model development — design decisions, rationale, and lifecycle records |
 | A.6.4.3 | AI model training — records of training runs, datasets, and parameters |
@@ -306,4 +306,4 @@ ISO/IEC 42001 specifies requirements for an AI Management System (AIMS) and a se
 
 ---
 
-> **Disclaimer:** AIGov assists with the documentation and visualisation of AI system data flows. It does not validate, audit, or certify compliance with any regulation or standard. All diagrams and governance assessments should be reviewed by qualified legal, privacy, and AI risk practitioners as part of a formal governance programme.
+> **Disclaimer:** AIGov assists with the documentation and visualization of AI system data flows. It does not validate, audit, or certify compliance with any regulation or standard. All diagrams and governance assessments should be reviewed by qualified legal, privacy, and AI risk practitioners as part of a formal governance program.
