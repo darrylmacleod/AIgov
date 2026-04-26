@@ -103,7 +103,7 @@ Inference Response flows targeting an **Automated Decision** component trigger a
 
 Selecting any component or flow type surfaces relevant obligations in the Properties panel.
 
-| Component or Flow | Frameworks and specific obligations surfaced |
+| Component or Flow | Frameworks and specific obligations |
 |---|---|
 | Foundation Model / LLM | EU AI Act Art. 53 (GPAI documentation, copyright summary, transparency report); Art. 12 (logging); Art. 55 (systemic risk at 10²⁵ FLOPs). ISO 42001 A.6.1 (intended purpose spec); A.7.2 (technical documentation); A.8.2 (communication to users) |
 | Custom Trained Model | Model Card requirements; bias/fairness assessments; NIST AI RMF MEASURE 2.5; EU AI Act Art. 10. ISO 42001 A.6.4.2 (model development); A.6.4.4 (evaluation and testing); A.5.3 (impact assessment) |
