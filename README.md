@@ -1,6 +1,6 @@
-# AIGov - AI Governance & Data Flow Builder
+# AIgov - AI Governance & Data Flow Builder
 
-AIGov is a fully self-contained, browser-based tool for mapping and documenting AI system data flows with inline governance guidance. Designed for AI governance leads, risk managers, privacy engineers, and compliance teams who need to visualize how data moves through AI pipelines, identify regulatory obligations at each touchpoint, and produce audit-ready documentation.
+AIgov is a fully self-contained, browser-based tool for mapping and documenting AI system data flows with inline governance guidance. Designed for AI governance leads, risk managers, privacy engineers, and compliance teams who need to visualize how data moves through AI pipelines, identify regulatory obligations at each touchpoint, and produce audit-ready documentation.
 
 No installation. No server. No dependencies. Open the HTML file in any modern browser and start diagramming.
 
@@ -306,4 +306,4 @@ ISO/IEC 42001 specifies requirements for an AI Management System (AIMS) and a se
 
 ---
 
-> **Disclaimer:** AIGov assists with the documentation and visualization of AI system data flows. It does not validate, audit, or certify compliance with any regulation or standard. All diagrams and governance assessments should be reviewed by qualified legal, privacy, and AI risk practitioners as part of a formal governance program.
+> **Disclaimer:** AIgov assists with the documentation and visualization of AI system data flows. It does not validate, audit, or certify compliance with any regulation or standard. All diagrams and governance assessments should be reviewed by qualified legal, privacy, and AI risk practitioners as part of a formal governance program.
