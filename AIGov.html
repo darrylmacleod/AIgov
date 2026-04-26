@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIGov - AI Governance &amp; Data Flow Builder</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+#toolbar {
+  background: #0f172a; padding: 7px 12px; display: flex; align-items: center;
+  gap: 6px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.logo { font-size: 13px; font-weight: 700; color: #f8fafc; margin-right: 6px; white-space: nowrap; }
+.logo span { color: #a855f7; }
+#dirty-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #f59e0b;
+  flex-shrink: 0; display: none; margin-right: 2px; box-shadow: 0 0 4px #f59e0b;
+}
+.tbtn {
+  background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 5px;
+  padding: 4px 9px; font-size: 11px; cursor: pointer; display: flex; align-items: center;
+  gap: 4px; white-space: nowrap; transition: background 0.1s;
+}
+.tbtn:hover { background: #334155; }
+.tbtn.active { background: #6d28d9; border-color: #a78bfa; color: #fff; }
+.tbtn.danger:hover { background: #7f1d1d; color: #fca5a5; border-color: #ef4444; }
+.tbtn:disabled { opacity: 0.38; cursor: not-allowed; }
+.tbtn:disabled:hover { background: #1e293b; }
+.tsep { width: 1px; height: 18px; background: #334155; flex-shrink: 0; }
+.zoom-lbl { font-size: 11px; color: #94a3b8; min-width: 34px; text-align: center; }
+.spacer { flex: 1; }
+
+/* ── Layout ──────────────────────────────────────────────────────── */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+#sidebar {
+  width: 196px; background: #fff; border-right: 1px solid #e2e8f0;
+  overflow-y: auto; flex-shrink: 0;
+}
+.cat-hdr {
+  padding: 7px 10px 3px; font-size: 10px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.05em; border-top: 1px solid #f1f5f9; margin-top: 2px;
+}
+.cat-hdr:first-child { border-top: none; margin-top: 0; }
+.sitem {
+  display: flex; align-items: center; gap: 7px; padding: 4px 8px; cursor: pointer;
+  border-radius: 5px; margin: 1px 4px; border: 1px solid transparent; transition: background 0.1s;
+}
+.sitem:hover { background: #f1f5f9; }
+.sitem.active { background: #f5f3ff; border-color: #ddd6fe; }
+.sitem-ic { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.sitem-lbl { font-size: 11px; color: #475569; }
+
+/* ── Canvas ──────────────────────────────────────────────────────── */
+#canvas-wrap {
+  flex: 1; position: relative; overflow: hidden; background: #f1f5f9;
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 22px 22px; cursor: default;
+}
+#canvas-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#canvas-svg.placing  { cursor: crosshair; }
+#canvas-svg.zonedraw { cursor: crosshair; }
+
+/* ── Properties panel ────────────────────────────────────────────── */
+#props {
+  width: 216px; background: #fff; border-left: 1px solid #e2e8f0;
+  flex-shrink: 0; overflow-y: auto; display: none;
+}
+#props.show { display: block; }
+.props-hdr { padding: 9px 12px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; letter-spacing: 0.04em; }
+.props-sect { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+.props-sect label { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; }
+.props-sect input, .props-sect select, .props-sect textarea {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 4px; padding: 5px 7px;
+  font-size: 11px; color: #1e293b; background: #f8fafc; font-family: inherit;
+}
+.props-sect input:focus, .props-sect select:focus, .props-sect textarea:focus { outline: none; border-color: #8b5cf6; background: #fff; }
+.props-sect textarea { resize: vertical; min-height: 55px; }
+.warn-badge { margin: 8px; padding: 7px 9px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; font-size: 10px; color: #991b1b; line-height: 1.5; }
+.caution-badge { margin: 8px; padding: 7px 9px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; font-size: 10px; color: #92400e; line-height: 1.5; }
+.ok-badge { margin: 8px; padding: 7px 9px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; font-size: 10px; color: #166534; line-height: 1.5; }
+.info-badge { margin: 8px; padding: 7px 9px; background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 6px; font-size: 10px; color: #4c1d95; line-height: 1.5; }
+
+/* ── Legend ──────────────────────────────────────────────────────── */
+#legend {
+  position: absolute; bottom: 10px; right: 10px;
+  background: rgba(255,255,255,0.97); border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 9px 12px; font-size: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); pointer-events: none;
+}
+#legend h4 { font-size: 10px; color: #64748b; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
+.leg-row { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; color: #475569; }
+.leg-line { height: 2px; width: 20px; border-radius: 1px; flex-shrink: 0; }
+.leg-dash { width: 20px; height: 0; border-top: 2px dashed; flex-shrink: 0; }
+
+/* ── Hint bar ────────────────────────────────────────────────────── */
+#hint-bar {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(15,23,42,0.88); color: #e2e8f0; border-radius: 20px;
+  padding: 4px 14px; font-size: 11px; pointer-events: none; transition: opacity 0.3s;
+  white-space: nowrap; z-index: 10;
+}
+#hint-bar.hide { opacity: 0; }
+
+/* ── Context menu ────────────────────────────────────────────────── */
+#ctx-menu {
+  position: fixed; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 4px; z-index: 1000; min-width: 160px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12); display: none;
+}
+.cx-item { padding: 6px 10px; font-size: 11px; cursor: pointer; border-radius: 4px; color: #374151; display: flex; align-items: center; gap: 7px; }
+.cx-item:hover { background: #f5f3ff; }
+.cx-item.danger { color: #dc2626; }
+.cx-item.danger:hover { background: #fef2f2; }
+.cx-sep { height: 1px; background: #f1f5f9; margin: 3px 0; }
+
+/* ── Toast ───────────────────────────────────────────────────────── */
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #f1f5f9; border-radius: 8px; padding: 7px 16px; font-size: 11px; z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+#toast.show { opacity: 1; }
+
+/* ── Node & Edge styles ──────────────────────────────────────────── */
+.node { cursor: move; }
+.node .port { opacity: 0; cursor: crosshair; transition: opacity 0.12s; }
+.node:hover .port { opacity: 1; }
+.edge-line { fill: none; pointer-events: none; }
+
+/* ── Zone styles ─────────────────────────────────────────────────── */
+.zone-hdr-rect { cursor: move; }
+.zone-lbl-text { pointer-events: none; font-family: 'Segoe UI', system-ui, sans-serif; }
+.zone-bg-rect  { pointer-events: none; }
+.zone-ring-rect { pointer-events: none; }
+
+/* ── Inline label editor ─────────────────────────────────────────── */
+#label-editor-wrap { position: fixed; z-index: 3000; display: none; }
+#label-editor-input {
+  border: 2px solid #8b5cf6; border-radius: 5px; padding: 4px 8px;
+  font-size: 13px; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #1e293b; background: #fff; outline: none;
+  min-width: 120px; max-width: 260px;
+  box-shadow: 0 4px 16px rgba(139,92,246,0.25);
+}
+
+/* ── Narrative Modal ─────────────────────────────────────────────── */
+#narrative-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 5000;
+  display: flex; align-items: center; justify-content: center;
+}
+#narrative-modal.hide { display: none; }
+.modal-box {
+  background: #fff; border-radius: 10px; width: 600px; max-width: 95vw;
+  max-height: 88vh; display: flex; flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+}
+.modal-hdr {
+  padding: 13px 16px; border-bottom: 1px solid #e2e8f0; font-size: 13px;
+  font-weight: 700; color: #1e293b; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0;
+}
+.modal-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.modal-ftr { padding: 10px 16px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+.mbtn { padding: 6px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; border: 1px solid #e2e8f0; background: #f8fafc; color: #374151; font-family: inherit; }
+.mbtn.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+.mbtn:hover { filter: brightness(0.93); }
+.m-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; margin-top: 14px; }
+.m-label:first-child { margin-top: 0; }
+.m-ta { width: 100%; border: 1px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 12px; color: #1e293b; font-family: inherit; resize: vertical; min-height: 80px; background: #f8fafc; line-height: 1.5; }
+.m-ta:focus, .m-inp:focus { outline: none; border-color: #8b5cf6; background: #fff; }
+.m-inp { border: 1px solid #e2e8f0; border-radius: 5px; padding: 5px 9px; font-size: 12px; color: #1e293b; background: #f8fafc; font-family: inherit; }
+.m-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.m-row .m-inp { flex: 1; }
+.ver-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+.ver-table th { background: #f8fafc; padding: 6px 9px; text-align: left; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+.ver-table td { padding: 6px 9px; border-bottom: 1px solid #f1f5f9; color: #374151; vertical-align: top; }
+.ver-table tr:last-child td { border-bottom: none; }
+.ver-badge { display: inline-block; padding: 1px 8px; border-radius: 20px; background: #f5f3ff; color: #6d28d9; font-size: 10px; font-weight: 700; }
+.ver-del { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 13px; padding: 0 4px; }
+.ver-del:hover { color: #dc2626; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── Toolbar ────────────────────────────────────────────────────── -->
+<div id="toolbar">
+  <div class="logo"><span>AI</span>Gov AI Governance &amp; Data Flow Builder</div>
+  <div id="dirty-dot" title="Unsaved changes"></div>
+  <div class="tsep"></div>
+  <button class="tbtn" id="btnUndo" onclick="undo()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+  <button class="tbtn" id="btnRedo" onclick="redo()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+  <div class="tsep"></div>
+  <button class="tbtn" onclick="newDiagram()" title="Clear canvas">⬜ New</button>
+  <button class="tbtn" onclick="fitView()" title="Fit all in view">⊡ Fit</button>
+  <div class="tsep"></div>
+  <button class="tbtn" id="btnConnect" onclick="toggleConnectMode()" title="Click-to-connect mode">🔗 Connect</button>
+  <button class="tbtn active" id="btnSnap" onclick="toggleSnap()" title="Toggle grid snap">⊞ Snap</button>
+  <div class="tsep"></div>
+  <button class="tbtn" onclick="saveDiagram()" title="Save to JSON">💾 Save</button>
+  <button class="tbtn" onclick="loadDiagram()" title="Load from JSON">📂 Load</button>
+  <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoad(event)"/>
+  <div class="tsep"></div>
+  <button class="tbtn" onclick="exportSVG()">↓ SVG</button>
+  <button class="tbtn" onclick="exportPNG()">↓ PNG</button>
+  <button class="tbtn" onclick="exportPDF()">↓ PDF</button>
+  <div class="tsep"></div>
+  <button class="tbtn" onclick="openNarrative()" title="Narrative &amp; version control">📝 Narrative</button>
+  <div class="tsep"></div>
+  <button class="tbtn" onclick="zoomOut()">－</button>
+  <span class="zoom-lbl" id="zoomLbl">100%</span>
+  <button class="tbtn" onclick="zoomIn()">＋</button>
+  <div class="spacer"></div>
+  <button class="tbtn danger" onclick="deleteSelected()" title="Delete selected (Del)">✕ Delete</button>
+</div>
+
+<!-- ── Main ──────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="sidebar"></div>
+
+  <div id="canvas-wrap">
+    <svg id="canvas-svg" xmlns="http://www.w3.org/2000/svg" aria-label="AI governance data flow diagram canvas" role="img">
+      <defs id="svg-defs"></defs>
+      <rect id="canvas-bg" fill="transparent" width="100%" height="100%"/>
+      <g id="viewport">
+        <g id="zones-layer"></g>
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+        <rect id="box-select-rect" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6"
+              stroke-width="1.5" stroke-dasharray="4,3" style="display:none; pointer-events:none;"/>
+        <rect id="zone-preview-rect" fill="rgba(139,92,246,0.05)" stroke="#8b5cf6"
+              stroke-width="2" stroke-dasharray="8,4" rx="6"
+              style="display:none; pointer-events:none;"/>
+        <line id="rubber-band" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,4"
+              style="display:none; pointer-events:none;"/>
+      </g>
+    </svg>
+    <div id="hint-bar" class="hide"></div>
+    <div id="legend">
+      <h4>Data Flow Types</h4>
+      <div class="leg-row"><div class="leg-dash" style="color:#ef4444"></div> 🔴 PII / Personal Data</div>
+      <div class="leg-row"><div class="leg-dash" style="color:#f97316"></div> 🟠 Sensitive Data</div>
+      <div class="leg-row"><div class="leg-line" style="background:#10b981"></div> 🟢 Anonymized Data</div>
+      <div class="leg-row"><div class="leg-line" style="background:#3b82f6"></div> 📚 Training Data</div>
+      <div class="leg-row"><div class="leg-line" style="background:#8b5cf6"></div> ➡️ Inference Request</div>
+      <div class="leg-row"><div class="leg-line" style="background:#a855f7"></div> ⬅️ Inference Response</div>
+      <div class="leg-row"><div class="leg-line" style="background:#6366f1"></div> 🔧 Model Weights</div>
+      <div class="leg-row"><div class="leg-dash" style="color:#64748b"></div> 📋 Audit Log</div>
+      <div class="leg-row"><div class="leg-line" style="background:#14b8a6"></div> 🔄 Feedback / RLHF</div>
+      <div class="leg-row"><div class="leg-dash" style="color:#f59e0b"></div> 👁 Human Review</div>
+      <div class="leg-row"><div class="leg-line" style="background:#1d4ed8"></div> 🔌 API Call (ext.)</div>
+      <div class="leg-row"><div class="leg-line" style="background:#94a3b8"></div> → Generic Flow</div>
+    </div>
+  </div>
+
+  <div id="props">
+    <div class="props-hdr" id="props-hdr">Properties</div>
+    <div id="props-content"></div>
+  </div>
+</div>
+
+<!-- ── Inline label editor ────────────────────────────────────────── -->
+<div id="label-editor-wrap">
+  <input id="label-editor-input" type="text"
+         onkeydown="onLabelKey(event)" onblur="commitLabel()"/>
+</div>
+
+<!-- ── Narrative Modal ───────────────────────────────────────────── -->
+<div id="narrative-modal" class="hide">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span>📝 System Narrative &amp; Version Control</span>
+      <button class="mbtn" onclick="closeNarrative()" style="padding:2px 9px;font-size:14px">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-label">System Narrative</div>
+      <textarea class="m-ta" id="nar-ta" rows="5"
+        placeholder="Describe the AI system — intended use, risk classification, data sources, trust boundaries, human oversight mechanisms, applicable regulations, and any assumptions or exclusions…"></textarea>
+      <div class="m-label" style="margin-top:16px">Current Version</div>
+      <div class="m-row">
+        <input class="m-inp" id="nar-ver" style="width:90px;flex:none" placeholder="e.g. 1.0"/>
+        <span style="font-size:11px;color:#94a3b8">Update or use Add Version below</span>
+      </div>
+      <div class="m-label" style="margin-top:16px">Version History</div>
+      <table class="ver-table">
+        <thead><tr><th>Version</th><th>Date</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="ver-tbody"><tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:12px">No version entries yet</td></tr></tbody>
+      </table>
+      <div class="m-row" style="margin-top:8px">
+        <input class="m-inp" id="ver-add-num"   style="width:80px;flex:none" placeholder="Ver"/>
+        <input class="m-inp" id="ver-add-notes" placeholder="Describe what changed…"/>
+        <button class="mbtn" onclick="addVersion()">+ Add</button>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="mbtn" onclick="closeNarrative()">Cancel</button>
+      <button class="mbtn primary" onclick="closeNarrative()">Save &amp; Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Context menu ───────────────────────────────────────────────── -->
+<div id="ctx-menu">
+  <div class="cx-item" id="ctx-edit"      onclick="ctxEdit()">✏️ Edit Label</div>
+  <div class="cx-item" id="ctx-duplicate" onclick="ctxDuplicate()">⧉ Duplicate</div>
+  <div class="cx-sep"></div>
+  <div class="cx-item danger" onclick="ctxDelete()">🗑 Delete</div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const NW = 148, NH = 68, GRID = 22, MAX_HIST = 50;
+const NS = 'http://www.w3.org/2000/svg';
+const CATS = ['Data Sources','AI Pipeline','Models','Applications','Governance','Infrastructure','External'];
+
+// ─── NODE TYPE REGISTRY ───────────────────────────────────────────────────────
+const NT = {
+  // Data Sources
+  end_user:        { label:'End User / Consumer',    emoji:'👤', color:'#10b981', cat:'Data Sources'   },
+  enterprise_data: { label:'Enterprise Data Store',  emoji:'🗄', color:'#0891b2', cat:'Data Sources'   },
+  public_dataset:  { label:'Public Dataset',         emoji:'📊', color:'#0284c7', cat:'Data Sources'   },
+  third_party_data:{ label:'Third-Party Data',       emoji:'🔗', color:'#0369a1', cat:'Data Sources'   },
+  stream_data:     { label:'Real-time Stream',       emoji:'📡', color:'#0284c7', cat:'Data Sources'   },
+  synthetic_data:  { label:'Synthetic Data',         emoji:'🔬', color:'#0369a1', cat:'Data Sources'   },
+  // AI Pipeline
+  data_ingestion:  { label:'Data Ingestion',         emoji:'⬇️', color:'#4f46e5', cat:'AI Pipeline'    },
+  preprocessor:    { label:'Data Preprocessor',      emoji:'⚙️', color:'#4338ca', cat:'AI Pipeline'    },
+  feature_store:   { label:'Feature Store',          emoji:'🗂', color:'#3730a3', cat:'AI Pipeline'    },
+  training_pipeline:{ label:'Training Pipeline',     emoji:'🏋', color:'#4f46e5', cat:'AI Pipeline'    },
+  fine_tuning:     { label:'Fine-tuning Pipeline',   emoji:'🎯', color:'#4338ca', cat:'AI Pipeline'    },
+  vector_db:       { label:'Vector DB / RAG Store',  emoji:'🔍', color:'#3730a3', cat:'AI Pipeline'    },
+  model_registry:  { label:'Model Registry',         emoji:'📓', color:'#312e81', cat:'AI Pipeline'    },
+  // Models
+  llm:             { label:'Foundation Model / LLM', emoji:'🧠', color:'#7c3aed', cat:'Models'         },
+  custom_model:    { label:'Custom Trained Model',   emoji:'🤖', color:'#6d28d9', cat:'Models'         },
+  third_party_model:{ label:'3rd-Party Model API',   emoji:'🌐', color:'#5b21b6', cat:'Models'         },
+  embedding_model: { label:'Embedding Model',        emoji:'🔢', color:'#6d28d9', cat:'Models'         },
+  agent:           { label:'AI Agent / Orchestrator',emoji:'🕹', color:'#7c3aed', cat:'Models'         },
+  // Applications
+  application:     { label:'Application / UI',       emoji:'💻', color:'#059669', cat:'Applications'   },
+  api_consumer:    { label:'API Consumer',           emoji:'🔌', color:'#047857', cat:'Applications'   },
+  automated_decision:{ label:'Automated Decision',   emoji:'⚡', color:'#dc2626', cat:'Applications'   },
+  hitl:            { label:'Human-in-the-Loop',      emoji:'👁', color:'#0891b2', cat:'Applications'   },
+  output_filter:   { label:'Output Filter / Guardrail',emoji:'🚦',color:'#d97706', cat:'Applications'   },
+  // Governance
+  content_filter:  { label:'Content Moderation',     emoji:'🛡', color:'#b45309', cat:'Governance'     },
+  bias_detection:  { label:'Bias / Fairness Monitor',emoji:'⚖️', color:'#b45309', cat:'Governance'     },
+  pii_detector:    { label:'PII Detector / Redactor',emoji:'🔏', color:'#92400e', cat:'Governance'     },
+  explainability:  { label:'Explainability Module',  emoji:'💡', color:'#d97706', cat:'Governance'     },
+  audit_log:       { label:'Audit Log',              emoji:'📋', color:'#64748b', cat:'Governance'     },
+  model_monitor:   { label:'Model Monitor',          emoji:'📈', color:'#92400e', cat:'Governance'     },
+  access_control:  { label:'Access Control / IAM',   emoji:'🔑', color:'#b45309', cat:'Governance'     },
+  // Infrastructure
+  api_gateway:     { label:'API Gateway',            emoji:'🚪', color:'#475569', cat:'Infrastructure' },
+  compute:         { label:'GPU / TPU Cluster',      emoji:'🖥', color:'#334155', cat:'Infrastructure' },
+  serving_infra:   { label:'Model Serving',          emoji:'🏗', color:'#475569', cat:'Infrastructure' },
+  // External
+  model_provider:  { label:'Model Provider (ext.)',  emoji:'🏭', color:'#1e40af', cat:'External'       },
+  data_provider:   { label:'Data Provider (ext.)',   emoji:'📦', color:'#1e3a8a', cat:'External'       },
+  regulatory:      { label:'Regulatory / Audit Body',emoji:'🏛', color:'#1e3a8a', cat:'External'       },
+  cloud_infra:     { label:'Cloud Infrastructure',   emoji:'☁️', color:'#1d4ed8', cat:'External'       },
+};
+
+// ─── EDGE TYPE REGISTRY ───────────────────────────────────────────────────────
+const ET = {
+  pii:          { label:'🔴 PII / Personal Data',        color:'#ef4444', dash:'7,5' },
+  sensitive:    { label:'🟠 Sensitive Data',             color:'#f97316', dash:'6,4' },
+  anonymized:   { label:'🟢 Anonymized / Pseudonymized', color:'#10b981', dash:''    },
+  training:     { label:'📚 Training Data',              color:'#3b82f6', dash:''    },
+  inference_req:{ label:'➡️ Inference Request',          color:'#8b5cf6', dash:''    },
+  inference_resp:{ label:'⬅️ Inference Response',        color:'#a855f7', dash:''    },
+  weights:      { label:'🔧 Model Weights / Artifacts',  color:'#6366f1', dash:''    },
+  audit:        { label:'📋 Audit Log',                  color:'#64748b', dash:'4,4' },
+  feedback:     { label:'🔄 Feedback / RLHF',           color:'#14b8a6', dash:''    },
+  human_review: { label:'👁 Human Review',               color:'#f59e0b', dash:'5,3' },
+  api_call:     { label:'🔌 API Call (External)',        color:'#1d4ed8', dash:''    },
+  generic:      { label:'→ Generic Flow',                color:'#94a3b8', dash:''    },
+};
+
+// ─── ZONE TYPE REGISTRY ───────────────────────────────────────────────────────
+const ZT = {
+  high_risk:      { label:'High-Risk AI System',    color:'#ef4444', bg:'rgba(239,68,68,0.06)',    border:'rgba(239,68,68,0.45)'   },
+  pii_zone:       { label:'PII Processing Zone',    color:'#f97316', bg:'rgba(249,115,22,0.06)',   border:'rgba(249,115,22,0.5)'   },
+  trust_boundary: { label:'Trust Boundary',         color:'#6366f1', bg:'rgba(99,102,241,0.05)',   border:'rgba(99,102,241,0.45)'  },
+  third_party:    { label:'Third-Party / External', color:'#8b5cf6', bg:'rgba(139,92,246,0.06)',   border:'rgba(139,92,246,0.45)'  },
+  human_oversight:{ label:'Human Oversight Zone',   color:'#059669', bg:'rgba(5,150,105,0.05)',    border:'rgba(5,150,105,0.45)'   },
+};
+
+// Port definitions
+const PD = {
+  n: { px:0.5, py:0,   ox:0,  oy:-1, bx:0,  by:-6 },
+  s: { px:0.5, py:1,   ox:0,  oy:1,  bx:0,  by:6  },
+  e: { px:1,   py:0.5, ox:1,  oy:0,  bx:6,  by:0  },
+  w: { px:0,   py:0.5, ox:-1, oy:0,  bx:-6, by:0  },
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const S = {
+  nodes:[], edges:[], zones:[],
+  selected:null, multiSelected:new Set(),
+  placing:null, placingZone:null,
+  connectMode:false, connectFrom:null,
+  dragging:null, panning:null,
+  boxSelect:null, zoneDraw:null, clipboard:null,
+  pan:{x:0,y:0}, zoom:1, nid:1, eid:1, zid:1,
+  ctxTarget:null,
+  meta:{ narrative:'', version:'1.0', versions:[] },
+  history:[], future:[], dirty:false, snapGrid:true,
+};
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const snap = v => S.snapGrid ? Math.round(v / GRID) * GRID : v;
+
+function svgCoord(sx, sy) {
+  const r = $('canvas-svg').getBoundingClientRect();
+  return { x:(sx - r.left - S.pan.x) / S.zoom, y:(sy - r.top - S.pan.y) / S.zoom };
+}
+function portPos(node, p) {
+  const d = PD[p];
+  return { x:node.x + d.px*NW + d.bx, y:node.y + d.py*NH + d.by };
+}
+function edgePath(e) {
+  const src = S.nodes.find(n => n.id===e.sourceId);
+  const tgt = S.nodes.find(n => n.id===e.targetId);
+  if (!src || !tgt) return '';
+  const p1 = portPos(src, e.srcPort), p2 = portPos(tgt, e.tgtPort);
+  const hSrc = e.srcPort==='e' || e.srcPort==='w';
+  const hTgt = e.tgtPort==='e' || e.tgtPort==='w';
+  if (hSrc && hTgt)  { const mx=(p1.x+p2.x)/2; return `M${p1.x},${p1.y} L${mx},${p1.y} L${mx},${p2.y} L${p2.x},${p2.y}`; }
+  if (!hSrc && !hTgt){ const my=(p1.y+p2.y)/2; return `M${p1.x},${p1.y} L${p1.x},${my} L${p2.x},${my} L${p2.x},${p2.y}`; }
+  if (hSrc)  { return `M${p1.x},${p1.y} L${p2.x},${p1.y} L${p2.x},${p2.y}`; }
+  return `M${p1.x},${p1.y} L${p1.x},${p2.y} L${p2.x},${p2.y}`;
+}
+function orthMid(p1, p2, sp, tp) {
+  const hS = sp==='e'||sp==='w', hT = tp==='e'||tp==='w';
+  if (hS && hT)   return { x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2 };
+  if (!hS && !hT) return { x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2 };
+  if (hS && !hT)  return { x:p2.x, y:p1.y };
+  return { x:p1.x, y:p2.y };
+}
+function bestPorts(a, b) {
+  const dx = b.x+NW/2-(a.x+NW/2), dy = b.y+NH/2-(a.y+NH/2);
+  if (Math.abs(dx)>=Math.abs(dy)) return {sp:dx>0?'e':'w', tp:dx>0?'w':'e'};
+  return {sp:dy>0?'s':'n', tp:dy>0?'n':'s'};
+}
+function closestPort(node, cx, cy) {
+  let best=null, bestD=Infinity;
+  for (const p of ['n','s','e','w']) { const pp=portPos(node,p), d=Math.hypot(pp.x-cx,pp.y-cy); if(d<bestD){bestD=d;best=p;} }
+  return best;
+}
+function nodeAt(cx, cy, excl) {
+  for (const n of S.nodes) {
+    if (n.id===excl) continue;
+    if (cx>=n.x-8 && cx<=n.x+NW+8 && cy>=n.y-8 && cy<=n.y+NH+8) return n;
+  }
+  return null;
+}
+const makeNodeId = () => 'n' + (S.nid++);
+const makeEdgeId = () => 'e' + (S.eid++);
+const makeZoneId = () => 'z' + (S.zid++);
+function toast(msg, dur=2200) {
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+function hint(msg) { const h=$('hint-bar'); msg?(h.textContent=msg,h.classList.remove('hide')):h.classList.add('hide'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+const stateSnap = () => JSON.stringify({nodes:S.nodes,edges:S.edges,zones:S.zones});
+function pushHistory() {
+  S.history.push(stateSnap());
+  if (S.history.length>MAX_HIST) S.history.shift();
+  S.future=[]; setDirty(true); updateHistBtns();
+}
+function undo() {
+  if (!S.history.length) return;
+  S.future.push(stateSnap());
+  const prev = JSON.parse(S.history.pop());
+  S.nodes=prev.nodes; S.edges=prev.edges; S.zones=prev.zones||[];
+  S.selected=null; S.multiSelected.clear();
+  renderAll(); showProps(); updateHistBtns(); setDirty(true);
+}
+function redo() {
+  if (!S.future.length) return;
+  S.history.push(stateSnap());
+  const next = JSON.parse(S.future.pop());
+  S.nodes=next.nodes; S.edges=next.edges; S.zones=next.zones||[];
+  S.selected=null; S.multiSelected.clear();
+  renderAll(); showProps(); updateHistBtns(); setDirty(true);
+}
+function updateHistBtns() {
+  $('btnUndo').disabled = S.history.length===0;
+  $('btnRedo').disabled = S.future.length===0;
+}
+function setDirty(val) {
+  S.dirty=val; $('dirty-dot').style.display=val?'':'none';
+  document.title=(val?'● ':'')+' AIGov - AI Governance & Data Flow Builder';
+}
+
+// ─── SVG DEFS ─────────────────────────────────────────────────────────────────
+function initDefs() {
+  const d=$('svg-defs');
+  let h='<filter id="shadow" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.1)"/></filter>';
+  for (const [k,et] of Object.entries(ET))
+    h+=`<marker id="arr-${esc(k)}" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="${esc(et.color)}"/></marker>`;
+  d.innerHTML=h;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll() { renderZones(); renderEdges(); renderNodes(); updateVP(); }
+function updateVP() {
+  $('viewport').setAttribute('transform',`translate(${S.pan.x},${S.pan.y}) scale(${S.zoom})`);
+  $('zoomLbl').textContent=Math.round(S.zoom*100)+'%';
+}
+
+function mkSvgEl(parent, tag, attrs={}) {
+  const el=document.createElementNS(NS,tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+  parent.appendChild(el); return el;
+}
+
+// ── Nodes ─────────────────────────────────────────────────────────────────────
+function renderNodes() {
+  const layer=$('nodes-layer');
+  const ids=new Set(S.nodes.map(n=>n.id));
+  layer.querySelectorAll('.node').forEach(el=>{ if(!ids.has(el.dataset.id)) el.remove(); });
+  for (const node of S.nodes) {
+    let g=layer.querySelector(`.node[data-id="${node.id}"]`);
+    if (!g) { g=mkNodeEl(node); layer.appendChild(g); }
+    updNodeEl(g,node);
+  }
+}
+function mkNodeEl(node) {
+  const g=document.createElementNS(NS,'g');
+  g.setAttribute('class','node'); g.dataset.id=node.id;
+  const mk=(tag,attrs)=>mkSvgEl(g,tag,attrs);
+  mk('rect',{x:'-8',y:'-8',width:NW+16,height:NH+16,rx:'10',fill:'transparent','pointer-events':'all',class:'node-hit'});
+  mk('rect',{x:'2',y:'3',width:NW,height:NH,rx:'8',fill:'rgba(0,0,0,0.07)'});
+  mk('rect',{width:NW,height:NH,rx:'8',fill:'#fff',stroke:'#e2e8f0','stroke-width':'1.5',class:'node-body'});
+  mk('rect',{width:'5',height:NH,rx:'3',class:'node-accent'});
+  mk('rect',{x:'3',width:'2',height:NH,class:'node-accent-sq'});
+  mk('circle',{cx:'31',cy:NH/2,r:'16',class:'node-ic-bg'});
+  mk('text',{x:'31',y:NH/2+7,'text-anchor':'middle','font-size':'17',class:'node-ico','dominant-baseline':'auto'});
+  mk('text',{x:'90',y:NH/2-6,'text-anchor':'middle','font-size':'11.5','font-weight':'600',fill:'#1e293b',class:'node-lbl'});
+  mk('text',{x:'90',y:NH/2+11,'text-anchor':'middle','font-size':'9.5',fill:'#94a3b8',class:'node-sub'});
+  for (const [pk,pd] of Object.entries(PD)) {
+    const p=mk('circle',{cx:pd.px*NW+pd.bx,cy:pd.py*NH+pd.by,r:'6',fill:'#fff',stroke:'#8b5cf6','stroke-width':'2',class:'port'});
+    p.dataset.port=pk; p.addEventListener('mousedown',onPortDown);
+  }
+  mk('rect',{x:'-4',y:'-4',width:NW+8,height:NH+8,rx:'10',fill:'none',stroke:'#8b5cf6','stroke-width':'2',display:'none',class:'sel-ring'});
+  g.addEventListener('mousedown',onNodeDown);
+  g.addEventListener('dblclick',onNodeDbl);
+  g.addEventListener('contextmenu',onNodeCtx);
+  return g;
+}
+function updNodeEl(g, node) {
+  const nt=NT[node.type], c=nt.color;
+  g.setAttribute('transform',`translate(${node.x},${node.y})`);
+  g.querySelector('.node-accent').setAttribute('fill',c);
+  g.querySelector('.node-accent-sq').setAttribute('fill',c);
+  const icBg=g.querySelector('.node-ic-bg');
+  icBg.setAttribute('fill',c); icBg.setAttribute('opacity','0.13');
+  g.querySelector('.node-ico').textContent=nt.emoji;
+  g.querySelector('.node-lbl').textContent=node.label||nt.label;
+  g.querySelector('.node-sub').textContent=nt.label;
+  const sel=(S.selected?.type==='node'&&S.selected?.id===node.id)||S.multiSelected.has(node.id);
+  g.querySelector('.sel-ring').setAttribute('display',sel?'':'none');
+  const body=g.querySelector('.node-body');
+  body.setAttribute('stroke',sel?'#8b5cf6':'#e2e8f0');
+  body.setAttribute('stroke-width',sel?'2':'1.5');
+}
+
+// ── Edges ─────────────────────────────────────────────────────────────────────
+function renderEdges() {
+  const layer=$('edges-layer');
+  const ids=new Set(S.edges.map(e=>e.id));
+  layer.querySelectorAll('.edge').forEach(el=>{ if(!ids.has(el.dataset.id)) el.remove(); });
+  for (const edge of S.edges) {
+    let g=layer.querySelector(`.edge[data-id="${edge.id}"]`);
+    if (!g) { g=mkEdgeEl(edge); layer.appendChild(g); }
+    updEdgeEl(g,edge);
+  }
+}
+function mkEdgeEl(edge) {
+  const g=document.createElementNS(NS,'g'); g.setAttribute('class','edge'); g.dataset.id=edge.id;
+  const mk=(tag,attrs)=>mkSvgEl(g,tag,attrs);
+  mk('path',{stroke:'transparent','stroke-width':'14',fill:'none',cursor:'pointer',class:'edge-hit'});
+  mk('path',{'stroke-width':'2.5',class:'edge-line'});
+  mk('rect',{rx:'3',fill:'#fff',stroke:'#e2e8f0','stroke-width':'1',class:'edge-lbg'});
+  mk('text',{'text-anchor':'middle','font-size':'10',fill:'#475569',class:'edge-ltxt'});
+  g.addEventListener('mousedown',onEdgeDown);
+  g.addEventListener('contextmenu',onEdgeCtx);
+  return g;
+}
+function updEdgeEl(g, edge) {
+  const et=ET[edge.type||'generic'], d=edgePath(edge); if (!d) return;
+  const src=S.nodes.find(n=>n.id===edge.sourceId), tgt=S.nodes.find(n=>n.id===edge.targetId);
+  const p1=portPos(src,edge.srcPort), p2=portPos(tgt,edge.tgtPort);
+  const mid=orthMid(p1,p2,edge.srcPort,edge.tgtPort);
+  g.querySelector('.edge-hit').setAttribute('d',d);
+  const line=g.querySelector('.edge-line');
+  line.setAttribute('d',d); line.setAttribute('stroke',et.color);
+  line.setAttribute('stroke-dasharray',et.dash||'');
+  line.setAttribute('marker-end',`url(#arr-${edge.type||'generic'})`);
+  const sel=S.selected?.type==='edge'&&S.selected?.id===edge.id;
+  line.setAttribute('stroke-width',sel?'3.5':'2.5'); line.setAttribute('opacity',sel?'1':'0.88');
+  const lbl=edge.label||'', lbg=g.querySelector('.edge-lbg'), ltxt=g.querySelector('.edge-ltxt');
+  if (lbl) {
+    ltxt.setAttribute('x',mid.x); ltxt.setAttribute('y',mid.y+4); ltxt.textContent=lbl;
+    const tw=ltxt.getComputedTextLength?ltxt.getComputedTextLength():lbl.length*6.2;
+    const w=tw+12;
+    lbg.setAttribute('x',mid.x-w/2); lbg.setAttribute('y',mid.y-9);
+    lbg.setAttribute('width',w); lbg.setAttribute('height',14);
+    lbg.setAttribute('display',''); ltxt.setAttribute('display','');
+  } else { lbg.setAttribute('display','none'); ltxt.setAttribute('display','none'); }
+}
+
+// ── Zones ─────────────────────────────────────────────────────────────────────
+function renderZones() {
+  const layer=$('zones-layer');
+  const ids=new Set(S.zones.map(z=>z.id));
+  layer.querySelectorAll('.zone').forEach(el=>{ if(!ids.has(el.dataset.id)) el.remove(); });
+  for (const zone of S.zones) {
+    let g=layer.querySelector(`.zone[data-id="${zone.id}"]`);
+    if (!g) { g=mkZoneEl(zone); layer.appendChild(g); }
+    updZoneEl(g,zone);
+  }
+}
+function mkZoneEl(zone) {
+  const g=document.createElementNS(NS,'g'); g.setAttribute('class','zone'); g.dataset.id=zone.id;
+  const mk=(tag,attrs)=>mkSvgEl(g,tag,attrs);
+  mk('rect',{rx:'8',class:'zone-bg-rect'});
+  mk('rect',{rx:'8',fill:'none','stroke-width':'2','stroke-dasharray':'10,5',class:'zone-border-rect','pointer-events':'none'});
+  mk('rect',{height:'26',rx:'6',class:'zone-hdr-rect',cursor:'move'});
+  mk('text',{y:'17',x:'10','font-size':'11','font-weight':'700',class:'zone-lbl-text'});
+  mk('rect',{rx:'10',fill:'none','stroke-width':'2.5','stroke-dasharray':'6,3',stroke:'#8b5cf6',display:'none',class:'zone-ring-rect'});
+  g.addEventListener('mousedown',onZoneDown);
+  g.addEventListener('dblclick',onZoneDbl);
+  g.addEventListener('contextmenu',onZoneCtx);
+  return g;
+}
+function updZoneEl(g, zone) {
+  const zt=ZT[zone.type||'trust_boundary'], sel=S.selected?.type==='zone'&&S.selected?.id===zone.id;
+  g.querySelector('.zone-bg-rect').setAttribute('fill',zt.bg);
+  g.querySelector('.zone-bg-rect').setAttribute('width',zone.w);
+  g.querySelector('.zone-bg-rect').setAttribute('height',zone.h);
+  const border=g.querySelector('.zone-border-rect');
+  border.setAttribute('width',zone.w); border.setAttribute('height',zone.h); border.setAttribute('stroke',zt.border);
+  const hdr=g.querySelector('.zone-hdr-rect');
+  hdr.setAttribute('width',zone.w); hdr.setAttribute('fill',zt.color); hdr.setAttribute('opacity',sel?'0.25':'0.18');
+  const lbl=g.querySelector('.zone-lbl-text');
+  lbl.setAttribute('fill',zt.color); lbl.textContent=zone.label||zt.label;
+  const ring=g.querySelector('.zone-ring-rect');
+  ring.setAttribute('x','-3'); ring.setAttribute('y','-3');
+  ring.setAttribute('width',zone.w+6); ring.setAttribute('height',zone.h+6);
+  ring.setAttribute('display',sel?'':'none');
+  g.setAttribute('transform',`translate(${zone.x},${zone.y})`);
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const sb=$('sidebar'); let h='';
+  for (const cat of CATS) {
+    const items=Object.entries(NT).filter(([,v])=>v.cat===cat);
+    if (!items.length) continue;
+    h+=`<div class="cat-hdr">${esc(cat)}</div>`;
+    for (const [k,nt] of items)
+      h+=`<div class="sitem" data-type="${esc(k)}" data-kind="node">
+        <div class="sitem-ic" style="background:${esc(nt.color)}18">${esc(nt.emoji)}</div>
+        <div class="sitem-lbl">${esc(nt.label)}</div></div>`;
+  }
+  h+=`<div class="cat-hdr">Boundary Zones</div>`;
+  for (const [k,zt] of Object.entries(ZT))
+    h+=`<div class="sitem" data-zone="${esc(k)}" data-kind="zone">
+      <div class="sitem-ic" style="background:${esc(zt.color)}22;border:1.5px dashed ${esc(zt.border)};border-radius:3px"></div>
+      <div class="sitem-lbl">${esc(zt.label)}</div></div>`;
+  sb.innerHTML=h;
+  sb.querySelectorAll('.sitem[data-kind="node"]').forEach(el=>el.addEventListener('click',()=>startPlace(el.dataset.type)));
+  sb.querySelectorAll('.sitem[data-kind="zone"]').forEach(el=>el.addEventListener('click',()=>startZone(el.dataset.zone)));
+}
+function startPlace(type) {
+  if (S.placing===type) { cancelMode(); return; }
+  cancelMode(); S.placing=type;
+  document.querySelector(`.sitem[data-type="${type}"]`)?.classList.add('active');
+  $('canvas-svg').classList.add('placing');
+  hint(`Click canvas to place ${NT[type].label} — Esc to cancel`);
+}
+function startZone(type) {
+  if (S.placingZone===type) { cancelMode(); return; }
+  cancelMode(); S.placingZone=type;
+  document.querySelector(`.sitem[data-zone="${type}"]`)?.classList.add('active');
+  $('canvas-svg').classList.add('zonedraw');
+  hint(`Drag on canvas to draw ${ZT[type].label} — Esc to cancel`);
+}
+function cancelMode() {
+  S.placing=null; S.placingZone=null; S.connectMode=false; S.connectFrom=null;
+  $('btnConnect').classList.remove('active');
+  $('canvas-svg').classList.remove('placing','zonedraw');
+  document.querySelectorAll('.sitem').forEach(el=>el.classList.remove('active'));
+  $('rubber-band').style.display='none'; hint();
+}
+
+// ─── PROPERTIES PANEL ─────────────────────────────────────────────────────────
+function showProps() {
+  const panel=$('props'), content=$('props-content'), hdr=$('props-hdr');
+  if (!S.selected) { panel.classList.remove('show'); return; }
+  panel.classList.add('show');
+
+  if (S.multiSelected.size>1) {
+    hdr.textContent=`${S.multiSelected.size} Components`;
+    content.innerHTML=`<div class="props-sect" style="color:#64748b;font-size:11px">${S.multiSelected.size} components selected. Move together or Delete to remove all.</div>`;
+    return;
+  }
+
+  if (S.selected.type==='node') {
+    const node=S.nodes.find(n=>n.id===S.selected.id); if (!node) return;
+    const nt=NT[node.type]; hdr.textContent=nt.label;
+    let h=`<div class="props-sect"><label>Label</label>
+      <input value="${esc(node.label||nt.label)}" onchange="updNode('label',this.value)"/>
+    </div><div class="props-sect"><label>Risk Classification</label>
+      <select onchange="updNode('riskClass',this.value)">
+        ${['—','Minimal Risk','Limited Risk','High Risk (EU AI Act)','Unacceptable Risk','GPAI / Foundation Model']
+          .map(o=>`<option${(node.riskClass||'')=== o?' selected':''}>${esc(o)}</option>`).join('')}
+      </select>
+    </div><div class="props-sect"><label>Notes</label>
+      <textarea onchange="updNode('notes',this.value)" onblur="pushHistory()">${esc(node.notes||'')}</textarea>
+    </div>`;
+
+    // Node-type specific guidance
+    if (node.type==='llm')
+      h+=`<div class="info-badge">🧠 [EU AI Act Art. 53] GPAI models must publish technical documentation, training data summary, and copyright compliance summary. [Art. 12] Log all inference requests and responses for traceability. [Art. 55] If training compute exceeds 10²⁵ FLOPs, systemic risk obligations apply. [ISO 42001 A.6.1] Document the intended purpose, use cases, and operational constraints of this model. [ISO 42001 A.7.2] Maintain technical documentation covering model architecture, capabilities, and known limitations. [ISO 42001 A.8.2] Communicate system characteristics and limitations to downstream deployers and users.</div>`;
+    if (node.type==='custom_model')
+      h+=`<div class="info-badge">🤖 Publish a Model Card covering training data provenance, evaluation metrics, intended use, and known limitations. Run bias/fairness assessments across protected characteristics before deployment. Align with NIST AI RMF MEASURE 2.5. [EU AI Act Art. 10] Training data must be sufficiently relevant, representative, and error-free for high-risk AI. [ISO 42001 A.6.4.2] Document the model development process, design decisions, and rationale. [ISO 42001 A.6.4.4] Conduct and record evaluation and testing results before deployment. [ISO 42001 A.5.3] Perform an AI system impact assessment proportionate to the system's risk profile.</div>`;
+    if (node.type==='third_party_model')
+      h+=`<div class="caution-badge">🌐 Obtain the provider's AI transparency report and usage policy. Confirm whether inputs are used for model training. Assess data residency for GDPR compliance. Classify the provider as a third-party in your AI risk register. [EU AI Act Art. 28] Deployers of GPAI models have obligations to downstream users. [ISO 42001 A.10.2] Define and enforce obligations for third-party AI providers through contractual controls. [ISO 42001 A.10.3] Assess AI supply chain risks associated with this provider, including model update and deprecation policies. [ISO 42001 A.10.4] Apply responsible procurement criteria when selecting and onboarding external AI model providers.</div>`;
+    if (node.type==='agent')
+      h+=`<div class="warn-badge">🕹 AI agents executing real-world actions require defined action boundaries, kill switches, and human escalation paths. Classify under EU AI Act based on deployment domain — agentic systems in high-risk contexts require conformity assessment (Art. 9). Log all actions taken, with timestamps and triggering inputs. [ISO 42001 A.9.3] Implement documented human oversight mechanisms with clearly defined intervention thresholds and authority. [ISO 42001 A.6.2.9] Incorporate safety and fail-safe controls into the agent design to prevent unintended actions. [ISO 42001 A.9.4] Establish incident management procedures for agent failures, unexpected actions, or safety boundary violations.</div>`;
+    if (node.type==='automated_decision')
+      h+=`<div class="warn-badge">⚡ [GDPR Art. 22] Automated decisions that significantly affect individuals grant the right to human review, explanation, and to contest the decision. [EU AI Act Art. 14] High-risk AI systems automating decisions must support meaningful human oversight — humans must be able to understand, disregard, and override outputs. Conduct a DPIA (Art. 35). [ISO 42001 A.9.2] Specify and document intended use constraints to prevent deployment in unintended contexts. [ISO 42001 A.9.3] Define and enforce human oversight controls including override mechanisms and mandatory review triggers. [ISO 42001 A.5.3] Include this decision process in your AI system impact assessment and document residual risk treatment.</div>`;
+    if (node.type==='hitl')
+      h+=`<div class="info-badge">👁 [EU AI Act Art. 14] Human oversight must be meaningful, not performative. Reviewers must understand the system's capabilities and limitations, have authority to override outputs, and not be subject to automation bias through excessive workload or interface design. Document intervention criteria, review timeframes, and escalation paths. Log all interventions. [ISO 42001 A.9.3] Implement and document human oversight controls: define which outputs require human review, reviewer qualifications, review authority, and how outcomes are recorded. [ISO 42001 A.3.2] Assign and document AI-specific roles and responsibilities, including who bears accountability for oversight decisions at this point in the pipeline.</div>`;
+    if (node.type==='training_pipeline')
+      h+=`<div class="caution-badge">🏋 [EU AI Act Art. 10] Training data for high-risk AI must be governed, relevant, representative, and free of errors as far as possible. Document data sources, collection methods, consent basis, and known biases. Maintain dataset cards and versioning. Run bias detection in the training loop. Retain lineage records for audit. [ISO 42001 A.6.3] Establish data management procedures covering data acquisition, quality, and retention throughout the training lifecycle. [ISO 42001 A.6.3.3] Document data preparation steps including cleaning, labelling, and transformation with version control. [ISO 42001 A.6.3.5] Define and enforce data quality criteria — completeness, accuracy, representativeness — before training data is ingested. [ISO 42001 A.6.4.3] Record the training process including hyperparameters, hardware, duration, and the specific dataset version used.</div>`;
+    if (node.type==='fine_tuning')
+      h+=`<div class="caution-badge">🎯 Fine-tuning on proprietary or customer data introduces new data governance obligations. Confirm consent and data use rights. Assess whether fine-tuning changes the model's risk classification. Document the fine-tuning dataset separately from the base model's training data. Evaluate output changes with evaluation datasets. [ISO 42001 A.6.4.3] Maintain training records for the fine-tuning run: dataset version, hyperparameters, convergence metrics, and evaluation results. [ISO 42001 A.6.3.2] Document how the fine-tuning dataset was acquired, any consent or licensing basis, and data quality measures applied.</div>`;
+    if (node.type==='pii_detector')
+      h+=`<div class="ok-badge">🔏 [GDPR Art. 25] PII detection and redaction implements privacy by design. Document detection accuracy, false negative rate (PII leaking to model), and false positive rate (utility loss). Test across all data modalities in scope. Retain redaction logs. If used in a high-risk AI system, include in risk management documentation (EU AI Act Art. 9). [ISO 42001 A.6.2.7] Privacy by design controls must be documented in the AI system's design specifications, including the scope of PII categories detected, redaction methodology, and accuracy thresholds.</div>`;
+    if (node.type==='content_filter')
+      h+=`<div class="ok-badge">🛡 Output guardrails are a required safety control for many deployed AI systems. Document: filtered content categories, false positive/negative rates, bypass testing results. Filters are often required by model provider ToS. [EU AI Act] For high-risk systems, log all filter activations. Test filters do not introduce discriminatory bias against protected groups. [ISO 42001 A.6.2.9] Safety controls including output filters must be designed into the system and documented as part of the safety-by-design approach. [ISO 42001 A.6.7.4] Review AI system outputs to ensure content filtering remains effective as model behaviour or input distributions change.</div>`;
+    if (node.type==='bias_detection')
+      h+=`<div class="info-badge">⚖️ [EU AI Act Art. 9 + NIST AI RMF MEASURE 2.5] Bias monitoring must cover protected characteristics across representative data slices. Document disparate impact metrics, acceptable thresholds, and remediation procedures. Required for high-risk AI systems. Provide an audit trail of detected bias events and actions taken. Repeat assessments when models or data distributions change. [ISO 42001 A.6.2.5] Fairness objectives must be specified and documented as part of AI system design, including which demographic groups and characteristics are monitored and what constitutes an acceptable fairness outcome. [ISO 42001 A.6.5.2] Testing for bias and fairness must be part of the AI system verification process; document test methodology, datasets used, results, and remediation steps taken.</div>`;
+    if (node.type==='audit_log')
+      h+=`<div class="info-badge">📋 [EU AI Act Art. 12] High-risk AI systems must log inputs, decisions, confidence scores, and filter activations automatically. [GDPR Art. 5(2)] Logs demonstrate accountability. Ensure logs are tamper-evident and retained proportionate to risk (typically 5+ years for high-risk AI). Verify logs do not persist unredacted PII. [ISO 42001 A.7.3] Maintain records that demonstrate compliance with AI governance obligations — logs must be sufficient to reconstruct decisions and demonstrate controls were operating as designed. [ISO 42001 A.6.7.3] Logging is a core performance monitoring control; define what is logged, retention periods, access controls on log data, and integrity verification procedures.</div>`;
+    if (node.type==='model_monitor')
+      h+=`<div class="info-badge">📈 [EU AI Act Art. 9 + NIST AI RMF MANAGE 3.1] Continuously monitor for data drift, model performance degradation, and distribution shift. Define alerting thresholds and documented response procedures. Monitor for emergent or unexpected behaviors in production. Integrate with post-market surveillance requirements for high-risk AI. [ISO 42001 A.6.7.3] Performance monitoring is a required operational control — document monitored metrics, measurement frequency, baseline performance thresholds, and the process for acting on monitoring alerts. [ISO 42001 A.9.4.2] Monitoring systems should feed into incident detection: define what constitutes an AI incident and how monitoring alerts trigger the incident management process.</div>`;
+    if (node.type==='explainability')
+      h+=`<div class="ok-badge">💡 [EU AI Act Art. 13] High-risk AI must provide information sufficient to enable human oversight and meaningful explanations. Document explanation method (SHAP, LIME, attention), fidelity to actual model reasoning, and intended audience (technical vs. end-user). Post-hoc explanations may not reflect true model reasoning — note this limitation in documentation. [ISO 42001 A.6.2.6] Transparency and explainability objectives must be defined in the AI system design: specify what explanations will be provided, to whom, in what format, and how explanation quality is measured and validated.</div>`;
+    if (node.type==='access_control')
+      h+=`<div class="ok-badge">🔑 [NIST AI RMF GOVERN 6.1] Apply least-privilege access to model weights, training data, inference endpoints, and governance artifacts. Implement role-based access controls. Log all access events. Restrict model weight access to authorized personnel. Review permissions quarterly or when personnel change. [ISO 42001 A.6.2.8] Access controls are a security objective for AI systems — document access control architecture, authentication mechanisms, and privilege review cadence as part of AI system security controls. [ISO 42001 A.3.2] Role-based access should align with documented AI roles and responsibilities, ensuring only personnel with defined accountability can access or modify sensitive AI assets.</div>`;
+    if (node.type==='vector_db')
+      h+=`<div class="caution-badge">🔍 Vector stores may encode personal or sensitive data in embeddings. Assess whether embeddings can be reversed to retrieve source content — if so, apply PII controls as if storing raw data. [GDPR Art. 17] Right-to-erasure requests require removal of data from the vector store and any cached embeddings. Document indexed corpora, update cadence, and access controls. [ISO 42001 A.6.3] Apply data management procedures to vector store contents: document what data is indexed, retention periods, quality controls, and how updates and deletions are handled. [ISO 42001 A.6.3.5] Define and enforce data quality criteria for indexed content — stale, inaccurate, or biased indexed data will degrade model output quality and may introduce compliance risk.</div>`;
+    if (node.type==='model_provider')
+      h+=`<div class="caution-badge">🏭 Assess external AI API providers under your third-party risk program. Obtain data processing agreements and confirm data residency. Clarify whether inputs are retained for provider model training. Review model cards, system cards, and usage policies. Monitor for model version changes that could affect outputs. [EU AI Act Art. 28] GPAI provider obligations flow to deployers. [ISO 42001 A.10.3] Evaluate AI supply chain risks for this provider: model provenance, training data practices, update and deprecation policies, and incident disclosure obligations. [ISO 42001 A.10.4] Apply responsible procurement criteria when selecting AI API providers — assess governance maturity, transparency practices, and compliance certifications.</div>`;
+    if (node.type==='regulatory')
+      h+=`<div class="info-badge">🏛 Regulatory and supervisory bodies may include the EU AI Office, national market surveillance authorities, data protection authorities (for GDPR), and sector regulators (financial, healthcare). Maintain documentation sufficient to respond to regulatory inspection at any time. [EU AI Act Art. 99] Penalties for non-compliance up to €35M or 7% of global annual turnover.</div>`;
+    if (node.type==='end_user')
+      h+=`<div class="info-badge">👤 [EU AI Act Art. 50] Users interacting with AI systems designed to interact with humans must be informed they are interacting with AI (unless obvious). [GDPR Art. 22] Users subject to automated decisions have the right to explanation, human review, and to contest the decision. Collect feedback to support ongoing model improvement and bias monitoring. [ISO 42001 A.8.2] Communicate clearly to end users what the AI system does, its capabilities and limitations, and how decisions are made — disclosure should be proportionate to the system's impact on users. [ISO 42001 A.9.2] Document intended use context for this system: who the end users are, their technical sophistication, and any use restrictions or contraindications.</div>`;
+    if (node.type==='synthetic_data')
+      h+=`<div class="ok-badge">🔬 Synthetic data can reduce privacy risk in training datasets. Document the generative method, fidelity metrics vs. original data, and any residual re-identification risk. [EU AI Act Art. 10] Synthetic training data must still be sufficiently representative of the target population. Assess whether synthetic data preserves or amplifies existing biases. [ISO 42001 A.6.3.2] Document the data acquisition process for synthetic data: the generative method, source data used, consent or licensing basis, and any known limitations. [ISO 42001 A.6.3.5] Evaluate synthetic data quality against the target population before use in training — representativeness, distributional fidelity, and absence of artifacts must be verified and recorded.</div>`;
+    if (node.type==='data_provider')
+      h+=`<div class="caution-badge">📦 External data providers introduce data quality, provenance, and legal risks. Confirm data licensing permits AI training use. Assess data collection methods for GDPR compliance. Maintain contractual data quality standards. Document data source in model documentation (EU AI Act Art. 11). Conduct periodic data quality audits. [ISO 42001 A.10.3] Assess supply chain risks for this data provider: data collection methods, provenance chain, license scope, and how the provider handles data corrections or withdrawals. [ISO 42001 A.10.4] Apply procurement controls when onboarding external data providers — define minimum data quality, documentation, and compliance standards in contracts.</div>`;
+
+    content.innerHTML=h;
+
+  } else if (S.selected.type==='edge') {
+    const edge=S.edges.find(e=>e.id===S.selected.id); if (!edge) return;
+    hdr.textContent='Data Flow';
+    const opts=Object.entries(ET).map(([k,v])=>`<option value="${esc(k)}"${edge.type===k?' selected':''}>${esc(v.label)}</option>`).join('');
+    let h=`<div class="props-sect"><label>Flow Type</label>
+      <select onchange="updEdgeType(this.value)">${opts}</select>
+    </div><div class="props-sect"><label>Label</label>
+      <input value="${esc(edge.label||'')}" onchange="updEdge('label',this.value)" placeholder="e.g. Redacted user query"/>
+    </div>`;
+
+    const tgtNode=S.nodes.find(n=>n.id===edge.targetId);
+    const srcNode=S.nodes.find(n=>n.id===edge.sourceId);
+
+    if (edge.type==='pii')
+      h+=`<div class="warn-badge">🔴 [GDPR Art. 5 + Art. 25] Personal data flowing between components must be minimised, protected in transit (encryption), and accessed only by authorised components. Consider whether this flow is necessary — can the receiving component function with anonymized or pseudonymized data instead? Document lawful basis (Art. 6/9). [ISO 42001 A.6.2.7] Privacy by design requires that personal data flows are evaluated at the design stage — document why this PII flow is necessary, what alternatives were considered, and what controls protect the data in transit.</div>`;
+    if (edge.type==='sensitive')
+      h+=`<div class="caution-badge">🟠 Sensitive data flows require documented access controls, encryption in transit, and classification labels. Assess whether data classification policies apply. Review retention and deletion obligations at the receiving component. Ensure the flow is logged for audit purposes.</div>`;
+    if (edge.type==='anonymized')
+      h+=`<div class="ok-badge">🟢 Anonymized or pseudonymized data reduces privacy risk. Confirm that re-identification risk has been assessed — pseudo-anonymized data remains personal data under GDPR. Document the anonymization method and risk assessment. Monitor for model inversion or membership inference attacks that could reverse anonymization.</div>`;
+    if (edge.type==='training')
+      h+=`<div class="info-badge">📚 [EU AI Act Art. 10] Training data flows must maintain provenance metadata: source, collection date, consent basis, license. Confirm data quality checks are applied before ingestion. Retain dataset versioning and lineage records. Assess training data for biases that could affect model fairness across protected characteristics. [ISO 42001 A.6.3] Data flowing into training must be governed end-to-end — document the data management procedures applied at each stage of this flow. [ISO 42001 A.6.3.3] Data preparation steps applied to this flow (cleaning, labelling, transformation) must be documented with version control. [ISO 42001 A.6.3.5] Validate that data quality criteria are met before data flows into the training pipeline — record validation results.</div>`;
+    if (edge.type==='inference_req') {
+      const hasPiiSrc = srcNode && ['end_user','enterprise_data','third_party_data'].includes(srcNode.type);
+      if (hasPiiSrc)
+        h+=`<div class="caution-badge">➡️ Inference requests from users or data sources may contain PII. Confirm that PII detection/redaction is applied before this flow reaches the model. Classify the data types expected in this flow. Log request metadata (without PII) for audit purposes.</div>`;
+      else
+        h+=`<div class="ok-badge">➡️ Document the expected input format and data types for this inference request. Validate and sanitise inputs before forwarding to the model to defend against prompt injection and data poisoning attacks. Log request metadata for traceability.</div>`;
+    }
+    if (edge.type==='inference_resp') {
+      const toAutoDecision = tgtNode && tgtNode.type==='automated_decision';
+      if (toAutoDecision)
+        h+=`<div class="warn-badge">⬅️ Inference responses flowing directly into automated decisions may trigger [GDPR Art. 22] rights and [EU AI Act Art. 14] human oversight requirements. Ensure there is a mechanism for human review before consequential decisions are taken. Log the model output and confidence score that triggered the decision.</div>`;
+      else
+        h+=`<div class="ok-badge">⬅️ Document the expected output schema. Apply output validation and content filtering before surfacing to users. Log outputs for audit and model monitoring. Consider whether model outputs constitute automated decision-making under GDPR Art. 22.</div>`;
+    }
+    if (edge.type==='weights')
+      h+=`<div class="caution-badge">🔧 Model weights and artifacts are high-value intellectual property and a potential security target. Encrypt weights at rest and in transit. Restrict access to authorized systems and personnel. Maintain a model registry entry for each weights version deployed. [NIST AI RMF GOVERN 6] Include weights access in your AI asset inventory. [ISO 42001 A.7.2] Model weights are a core documentation artifact — maintain a model registry recording each weights version, its provenance (training run, dataset, parameters), and deployment history. [ISO 42001 A.6.4.2] The transfer of weights between development and production constitutes a model lifecycle event; document the approval and validation steps required before weights are deployed.</div>`;
+    if (edge.type==='audit')
+      h+=`<div class="ok-badge">📋 [EU AI Act Art. 12] Audit log flows from high-risk AI systems must be automatic, complete, and tamper-evident. Logs must capture sufficient context to reconstruct decisions. Confirm this flow does not transmit unredacted PII to the logging system unless the log store itself meets PII protection requirements. [ISO 42001 A.7.3] Audit flows must support evidence of compliance — ensure the receiving log system retains records with sufficient integrity, completeness, and retention period to demonstrate that governance controls operated as designed.</div>`;
+    if (edge.type==='feedback')
+      h+=`<div class="caution-badge">🔄 Feedback used for RLHF or model fine-tuning becomes training data and carries all associated data governance obligations. [GDPR] If feedback contains personal data, confirm consent for use in training or rely on legitimate interests with DPIA. Document feedback data in model training records (EU AI Act Art. 10). [ISO 42001 A.6.3.2] Feedback loops that produce training data must be governed as data acquisition — document the feedback collection method, data types captured, consent or legitimate interest basis, and any filtering applied before use in training.</div>`;
+    if (edge.type==='human_review')
+      h+=`<div class="info-badge">👁 [EU AI Act Art. 14] Human review flows must be designed to enable genuinely informed oversight — reviewers need adequate information, time, and authority. Avoid design patterns that promote rubber-stamping (automation bias). Log human review decisions with reviewer ID, outcome, and reasoning. [ISO 42001 A.9.3] Human review is a core oversight control — document what information reviewers receive, decision criteria, authority scope, SLAs for review completion, and how review outcomes feed back into AI system improvement.</div>`;
+    if (edge.type==='api_call')
+      h+=`<div class="caution-badge">🔌 External API calls introduce third-party dependency and data sovereignty considerations. [GDPR] Transferring personal data to external APIs may constitute international data transfer — assess transfer mechanisms. Confirm the external provider has a current data processing agreement. Implement retry logic, circuit breakers, and fallback behavior for API unavailability.</div>`;
+
+    content.innerHTML=h;
+
+  } else if (S.selected.type==='zone') {
+    const zone=S.zones.find(z=>z.id===S.selected.id); if (!zone) return;
+    const zt=ZT[zone.type||'trust_boundary']; hdr.textContent='Zone';
+    const typeOpts=Object.entries(ZT).map(([k,v])=>`<option value="${esc(k)}"${zone.type===k?' selected':''}>${esc(v.label)}</option>`).join('');
+    let h=`<div class="props-sect"><label>Zone Type</label>
+      <select onchange="updZone('type',this.value)">${typeOpts}</select>
+    </div><div class="props-sect"><label>Custom Label</label>
+      <input value="${esc(zone.label||'')}" onchange="updZone('label',this.value)" placeholder="${esc(zt.label)}"/>
+    </div>`;
+    if (zone.type==='high_risk')
+      h+=`<div class="warn-badge">🔴 [EU AI Act Art. 6 + Annex III] High-risk AI systems require: risk management system (Art. 9), data governance documentation (Art. 10), technical documentation (Art. 11), logging (Art. 12), transparency to deployers (Art. 13), human oversight (Art. 14), and accuracy/robustness measures (Art. 15). A conformity assessment is required before market placement. [ISO 42001 Clause 6.1] Conduct and document a risk assessment for all AI systems within this zone — identify hazards, assess likelihood and impact, and determine treatment options. [ISO 42001 A.5.2] For high-impact systems, perform a structured AI system impact assessment covering societal, ethical, safety, and individual rights dimensions before deployment.</div>`;
+    if (zone.type==='pii_zone')
+      h+=`<div class="caution-badge">🟠 [GDPR Art. 35] Processing of personal data in AI systems that profile individuals or process special category data at scale likely requires a Data Protection Impact Assessment. Apply data minimisation, purpose limitation, and retention controls within this zone. Ensure all components have appropriate lawful basis documented. [ISO 42001 A.6.2.7] This zone marks where privacy by design controls are concentrated — document the privacy objectives, implemented controls (minimisation, pseudonymisation, encryption), and the residual privacy risk assessment for all AI processing within the zone.</div>`;
+    if (zone.type==='trust_boundary')
+      h+=`<div class="info-badge">🔵 Trust boundaries delineate where authentication, authorisation, and data validation controls apply. Data crossing this boundary should be treated as potentially untrusted. Document ingress/egress controls, network security controls, and access policies. [NIST AI RMF GOVERN 4] Trust boundaries should be reflected in your system architecture documentation. [ISO 42001 A.6.2.8] Security controls at trust boundaries must be documented as part of AI system design — specify authentication mechanisms, data validation requirements, and monitoring in place at each boundary crossing. [ISO 42001 A.4.4] Document the computing and organisational context of this trust boundary — what assets, environments, and data are contained within, and what threats the boundary controls against.</div>`;
+    if (zone.type==='third_party')
+      h+=`<div class="caution-badge">🟣 [NIST AI RMF GOVERN 5 + ISO 42001 Annex A.6] Third-party AI components require vendor risk assessment, contractual controls, and ongoing monitoring. Obtain current compliance certifications. Assess exit/transition risk. Confirm data processing agreements. Review AI-specific provisions including model update notifications and incident disclosure requirements.</div>`;
+    if (zone.type==='human_oversight')
+      h+=`<div class="ok-badge">🟢 [EU AI Act Art. 14 + NIST AI RMF GOVERN 1.7] Human oversight zones should be designed to enable genuine, informed intervention — not performative checkbox review. Document reviewer qualifications, intervention authority, escalation paths, SLAs, and how oversight decisions are logged. Review workload regularly to ensure oversight is feasible and not compromised by volume. [ISO 42001 A.9.3] Human oversight controls within this zone must be formally documented: which AI outputs require human review, the criteria reviewers apply, the authority to override, and how outcomes are recorded and fed back into the AI system's improvement cycle. [ISO 42001 A.3.2] Assign named roles and responsibilities within the oversight zone — document who is accountable for oversight decisions and what qualifications or training is required.</div>`;
+    content.innerHTML=h;
+  }
+}
+
+function updNode(key, val) {
+  const node=S.nodes.find(n=>n.id===S.selected?.id); if (!node) return;
+  if (key==='label') { pushHistory(); node[key]=val; renderNodes(); }
+  else node[key]=val;
+}
+function updEdge(key, val) { pushHistory(); const e=S.edges.find(e=>e.id===S.selected?.id); if(e){e[key]=val;renderEdges();showProps();} }
+function updEdgeType(val) { pushHistory(); const e=S.edges.find(e=>e.id===S.selected?.id); if(e){e.type=val;renderEdges();showProps();} }
+function updZone(key, val) { pushHistory(); const z=S.zones.find(z=>z.id===S.selected?.id); if(z){z[key]=val;renderZones();showProps();} }
+
+// ─── NARRATIVE ────────────────────────────────────────────────────────────────
+function openNarrative() {
+  $('narrative-modal').classList.remove('hide');
+  $('nar-ta').value=$('nar-ta').value||S.meta.narrative||'';
+  $('nar-ver').value=S.meta.version||'1.0';
+  renderVerTable();
+}
+function closeNarrative() {
+  S.meta.narrative=$('nar-ta').value; S.meta.version=$('nar-ver').value;
+  $('narrative-modal').classList.add('hide');
+}
+function renderVerTable() {
+  const tbody=$('ver-tbody');
+  if (!S.meta.versions.length) { tbody.innerHTML='<tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:12px">No version entries yet</td></tr>'; return; }
+  tbody.innerHTML=S.meta.versions.map((v,i)=>`<tr><td><span class="ver-badge">${esc(v.ver)}</span></td><td>${esc(v.date)}</td><td>${esc(v.notes)}</td><td><button class="ver-del" onclick="removeVersion(${i})" title="Remove">✕</button></td></tr>`).join('');
+}
+function addVersion() {
+  const ver=$('ver-add-num').value.trim(), notes=$('ver-add-notes').value.trim();
+  if (!ver) { toast('Enter a version number first'); return; }
+  S.meta.versions.unshift({ver,date:new Date().toISOString().slice(0,10),notes});
+  S.meta.version=ver; $('nar-ver').value=ver;
+  $('ver-add-num').value=''; $('ver-add-notes').value='';
+  renderVerTable(); toast(`Version ${ver} added ✓`);
+}
+function removeVersion(idx) { S.meta.versions.splice(idx,1); renderVerTable(); }
+
+// ─── INLINE LABEL EDITOR ──────────────────────────────────────────────────────
+let _labelTarget=null;
+function openLabelEditor(type, id) {
+  const wrap=$('label-editor-wrap'), inp=$('label-editor-input');
+  const r=$('canvas-svg').getBoundingClientRect();
+  let currentLabel='', x, y, w;
+  if (type==='node') {
+    const node=S.nodes.find(n=>n.id===id); if (!node) return;
+    currentLabel=node.label||NT[node.type].label;
+    x=r.left+S.pan.x+node.x*S.zoom; y=r.top+S.pan.y+node.y*S.zoom+(NH*S.zoom/2)-14;
+    w=Math.max(120,NW*S.zoom);
+  } else if (type==='zone') {
+    const zone=S.zones.find(z=>z.id===id); if (!zone) return;
+    currentLabel=zone.label||ZT[zone.type||'trust_boundary'].label;
+    x=r.left+S.pan.x+zone.x*S.zoom; y=r.top+S.pan.y+zone.y*S.zoom+4;
+    w=Math.max(120,Math.min(zone.w*S.zoom,280));
+  }
+  _labelTarget={type,id}; inp.value=currentLabel;
+  inp.style.width=w+'px'; inp.style.fontSize=Math.max(10,Math.min(14,13*S.zoom))+'px';
+  wrap.style.left=x+'px'; wrap.style.top=y+'px'; wrap.style.display='block';
+  setTimeout(()=>{inp.focus();inp.select();},10);
+}
+function commitLabel() {
+  if (!_labelTarget) return;
+  const val=$('label-editor-input').value.trim(); pushHistory();
+  if (_labelTarget.type==='node') { const n=S.nodes.find(n=>n.id===_labelTarget.id); if(n){n.label=val||NT[n.type].label;renderNodes();showProps();} }
+  else if (_labelTarget.type==='zone') { const z=S.zones.find(z=>z.id===_labelTarget.id); if(z){z.label=val;renderZones();showProps();} }
+  closeLabelEditor();
+}
+function closeLabelEditor() { $('label-editor-wrap').style.display='none'; _labelTarget=null; }
+function onLabelKey(e) { if(e.key==='Enter'){e.preventDefault();commitLabel();} if(e.key==='Escape'){e.preventDefault();closeLabelEditor();} }
+
+// ─── SELECTION ────────────────────────────────────────────────────────────────
+function select(type, id, addToMulti=false) {
+  if (!addToMulti) S.multiSelected.clear();
+  S.selected=id?{type,id}:null;
+  if (type==='node'&&id) {
+    if (addToMulti) { if(S.multiSelected.has(id)){S.multiSelected.delete(id);if(S.multiSelected.size===0)S.selected=null;} else S.multiSelected.add(id); }
+    else S.multiSelected.add(id);
+  }
+  renderAll(); showProps();
+}
+
+// ─── EVENT HANDLERS ───────────────────────────────────────────────────────────
+function onNodeDown(e) {
+  if (S.placing||S.placingZone) return;
+  if (e.target.classList.contains('port')) return;
+  e.stopPropagation();
+  const nodeId=this.dataset.id;
+  if (S.connectMode) {
+    const node=S.nodes.find(n=>n.id===nodeId);
+    if (!S.connectFrom) { S.connectFrom={nodeId}; hint('Now click another component to connect'); }
+    else if (S.connectFrom.nodeId!==nodeId) {
+      const src=S.nodes.find(n=>n.id===S.connectFrom.nodeId);
+      const {sp,tp}=bestPorts(src,node);
+      addEdge(S.connectFrom.nodeId,nodeId,sp,tp);
+      S.connectFrom=null; hint('Connect mode: click a component to start');
+    }
+    return;
+  }
+  select('node',nodeId,e.shiftKey);
+  const pos=svgCoord(e.clientX,e.clientY);
+  const dragNodeIds=S.multiSelected.size>1&&S.multiSelected.has(nodeId)?[...S.multiSelected]:[nodeId];
+  const dragNodes=dragNodeIds.map(nid=>{const n=S.nodes.find(nd=>nd.id===nid);return{nodeId:nid,ox:n.x,oy:n.y};});
+  S.dragging={nodes:dragNodes,mx:pos.x,my:pos.y,hasMoved:false,snapshot:stateSnap()};
+}
+function onPortDown(e) {
+  e.stopPropagation(); e.preventDefault();
+  const g=this.closest('.node'), nodeId=g.dataset.id, port=this.dataset.port;
+  const node=S.nodes.find(n=>n.id===nodeId), pp=portPos(node,port);
+  S.connectFrom={nodeId,port,x:pp.x,y:pp.y};
+  const rb=$('rubber-band');
+  rb.setAttribute('x1',pp.x); rb.setAttribute('y1',pp.y);
+  rb.setAttribute('x2',pp.x); rb.setAttribute('y2',pp.y); rb.style.display='';
+}
+function onEdgeDown(e) { if(S.placing||S.placingZone) return; e.stopPropagation(); select('edge',this.dataset.id); }
+function onNodeCtx(e) {
+  e.preventDefault(); e.stopPropagation(); const id=this.dataset.id; select('node',id);
+  $('ctx-edit').style.display=''; $('ctx-duplicate').style.display='';
+  showCtx(e.clientX,e.clientY,{type:'node',id});
+}
+function onEdgeCtx(e) {
+  e.preventDefault(); e.stopPropagation(); const id=this.dataset.id; select('edge',id);
+  $('ctx-edit').style.display='none'; $('ctx-duplicate').style.display='none';
+  showCtx(e.clientX,e.clientY,{type:'edge',id});
+}
+function onNodeDbl(e) { e.stopPropagation(); openLabelEditor('node',this.dataset.id); }
+function onZoneDown(e) {
+  if(S.placing||S.placingZone) return; e.stopPropagation(); const zoneId=this.dataset.id;
+  select('zone',zoneId);
+  const pos=svgCoord(e.clientX,e.clientY), zone=S.zones.find(z=>z.id===zoneId);
+  S.dragging={zoneId,mx:pos.x,my:pos.y,ox:zone.x,oy:zone.y,hasMoved:false,snapshot:stateSnap()};
+}
+function onZoneDbl(e) { e.stopPropagation(); openLabelEditor('zone',this.dataset.id); }
+function onZoneCtx(e) {
+  e.preventDefault(); e.stopPropagation(); const id=this.dataset.id; select('zone',id);
+  $('ctx-edit').style.display=''; $('ctx-duplicate').style.display='none';
+  showCtx(e.clientX,e.clientY,{type:'zone',id});
+}
+
+// ─── CANVAS EVENTS ────────────────────────────────────────────────────────────
+$('canvas-svg').addEventListener('mousedown', e => {
+  const tgt=e.target;
+  const onBg=tgt.id==='canvas-bg'||tgt===$('viewport')||tgt===$('canvas-svg');
+  if (!onBg) return;
+  closeLabelEditor();
+  if (S.placing) { const pos=svgCoord(e.clientX,e.clientY); addNode(S.placing,snap(pos.x-NW/2),snap(pos.y-NH/2)); return; }
+  if (S.placingZone) {
+    const pos=svgCoord(e.clientX,e.clientY); S.zoneDraw={type:S.placingZone,sx:pos.x,sy:pos.y};
+    const pr=$('zone-preview-rect'); const zt=ZT[S.placingZone];
+    pr.setAttribute('x',pos.x); pr.setAttribute('y',pos.y); pr.setAttribute('width',0); pr.setAttribute('height',0);
+    pr.setAttribute('stroke',zt.border); pr.setAttribute('fill',zt.bg); pr.style.display=''; return;
+  }
+  if (!e.shiftKey) { S.multiSelected.clear(); S.selected=null; renderAll(); showProps(); }
+  const pos=svgCoord(e.clientX,e.clientY); S.boxSelect={sx:pos.x,sy:pos.y};
+  S.panning={mx:e.clientX,my:e.clientY,opx:S.pan.x,opy:S.pan.y};
+});
+
+$('canvas-svg').addEventListener('mousemove', e => {
+  if (S.dragging) {
+    const pos=svgCoord(e.clientX,e.clientY), dx=pos.x-S.dragging.mx, dy=pos.y-S.dragging.my;
+    if (!S.dragging.hasMoved&&(Math.abs(dx)>2||Math.abs(dy)>2)) S.dragging.hasMoved=true;
+    if (S.dragging.zoneId) {
+      const zone=S.zones.find(z=>z.id===S.dragging.zoneId);
+      if (zone) { zone.x=S.dragging.ox+dx; zone.y=S.dragging.oy+dy; const g=$('zones-layer').querySelector(`.zone[data-id="${zone.id}"]`); if(g)updZoneEl(g,zone); }
+    } else if (S.dragging.nodes) {
+      for (const {nodeId,ox,oy} of S.dragging.nodes) {
+        const node=S.nodes.find(n=>n.id===nodeId); if(!node) continue;
+        node.x=ox+dx; node.y=oy+dy;
+        const g=$('nodes-layer').querySelector(`.node[data-id="${nodeId}"]`); if(g)g.setAttribute('transform',`translate(${node.x},${node.y})`);
+        S.edges.filter(ed=>ed.sourceId===nodeId||ed.targetId===nodeId).forEach(edge=>{ const eg=$('edges-layer').querySelector(`.edge[data-id="${edge.id}"]`); if(eg)updEdgeEl(eg,edge); });
+      }
+    }
+  } else if (S.connectFrom&&!S.connectMode) {
+    const pos=svgCoord(e.clientX,e.clientY); $('rubber-band').setAttribute('x2',pos.x); $('rubber-band').setAttribute('y2',pos.y);
+  } else if (S.zoneDraw) {
+    const pos=svgCoord(e.clientX,e.clientY);
+    const x=Math.min(pos.x,S.zoneDraw.sx),y=Math.min(pos.y,S.zoneDraw.sy);
+    const pr=$('zone-preview-rect'); pr.setAttribute('x',x); pr.setAttribute('y',y);
+    pr.setAttribute('width',Math.abs(pos.x-S.zoneDraw.sx)); pr.setAttribute('height',Math.abs(pos.y-S.zoneDraw.sy));
+  } else if (S.boxSelect) {
+    const pos=svgCoord(e.clientX,e.clientY);
+    const x=Math.min(pos.x,S.boxSelect.sx),y=Math.min(pos.y,S.boxSelect.sy);
+    const w=Math.abs(pos.x-S.boxSelect.sx),h=Math.abs(pos.y-S.boxSelect.sy);
+    const br=$('box-select-rect');
+    if (w>4||h>4) { br.setAttribute('x',x);br.setAttribute('y',y);br.setAttribute('width',w);br.setAttribute('height',h);br.style.display=''; S.panning=null; }
+  } else if (S.panning) {
+    S.pan.x=S.panning.opx+(e.clientX-S.panning.mx); S.pan.y=S.panning.opy+(e.clientY-S.panning.my); updateVP();
+  }
+});
+
+$('canvas-svg').addEventListener('mouseup', e => {
+  if (S.dragging) {
+    if (S.dragging.hasMoved) {
+      if (S.dragging.zoneId) { const z=S.zones.find(z=>z.id===S.dragging.zoneId); if(z&&S.snapGrid){z.x=snap(z.x);z.y=snap(z.y);} }
+      else { for(const{nodeId}of S.dragging.nodes){const n=S.nodes.find(n=>n.id===nodeId);if(n&&S.snapGrid){n.x=snap(n.x);n.y=snap(n.y);}} }
+      S.history.push(S.dragging.snapshot); if(S.history.length>MAX_HIST)S.history.shift(); S.future=[]; setDirty(true); updateHistBtns(); renderAll();
+    }
+    S.dragging=null;
+  } else if (S.connectFrom&&!S.connectMode) {
+    const pos=svgCoord(e.clientX,e.clientY), tgt=nodeAt(pos.x,pos.y,S.connectFrom.nodeId);
+    if (tgt) {
+      const sp=S.connectFrom.port||closestPort(S.nodes.find(n=>n.id===S.connectFrom.nodeId),pos.x,pos.y);
+      addEdge(S.connectFrom.nodeId,tgt.id,sp,closestPort(tgt,pos.x,pos.y));
+    }
+    $('rubber-band').style.display='none'; S.connectFrom=null;
+  } else if (S.zoneDraw) {
+    const pos=svgCoord(e.clientX,e.clientY);
+    const x=snap(Math.min(pos.x,S.zoneDraw.sx)), y=snap(Math.min(pos.y,S.zoneDraw.sy));
+    const w=Math.max(80,snap(Math.abs(pos.x-S.zoneDraw.sx))), h=Math.max(60,snap(Math.abs(pos.y-S.zoneDraw.sy)));
+    $('zone-preview-rect').style.display='none'; addZone(S.zoneDraw.type,x,y,w,h); S.zoneDraw=null; cancelMode();
+  } else if (S.boxSelect) {
+    const pr=$('box-select-rect');
+    const bx=parseFloat(pr.getAttribute('x')||0), by=parseFloat(pr.getAttribute('y')||0);
+    const bw=parseFloat(pr.getAttribute('width')||0), bh=parseFloat(pr.getAttribute('height')||0);
+    if (bw>4||bh>4) {
+      S.nodes.forEach(node=>{ const cx=node.x+NW/2,cy=node.y+NH/2; if(cx>=bx&&cx<=bx+bw&&cy>=by&&cy<=by+bh){S.multiSelected.add(node.id);if(!S.selected)S.selected={type:'node',id:node.id};} });
+      renderAll(); showProps();
+    }
+    pr.style.display='none'; S.boxSelect=null;
+  }
+  S.panning=null;
+});
+
+$('canvas-svg').addEventListener('contextmenu', e=>e.preventDefault());
+
+$('canvas-svg').addEventListener('wheel', e => {
+  e.preventDefault();
+  const r=$('canvas-svg').getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  const f=e.deltaY<0?1.12:0.88, nz=Math.max(0.15,Math.min(4,S.zoom*f));
+  S.pan.x=mx-(mx-S.pan.x)*(nz/S.zoom); S.pan.y=my-(my-S.pan.y)*(nz/S.zoom); S.zoom=nz; updateVP();
+},{passive:false});
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const inInp=e.target.matches('input,textarea,select');
+  if (e.key==='Escape') { cancelMode(); closeLabelEditor(); S.selected=null; S.multiSelected.clear(); renderAll(); showProps(); }
+  if ((e.key==='Delete'||e.key==='Backspace')&&!inInp) deleteSelected();
+  if (e.key==='z'&&(e.ctrlKey||e.metaKey)&&!e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.key==='y'&&(e.ctrlKey||e.metaKey))||(e.key==='z'&&(e.ctrlKey||e.metaKey)&&e.shiftKey)) { e.preventDefault(); redo(); }
+  if (e.key==='c'&&(e.ctrlKey||e.metaKey)&&!inInp) { e.preventDefault(); copySelected(); }
+  if (e.key==='v'&&(e.ctrlKey||e.metaKey)&&!inInp) { e.preventDefault(); pasteClipboard(); }
+  if (e.key==='d'&&(e.ctrlKey||e.metaKey)&&!inInp) { e.preventDefault(); duplicateSelected(); }
+  if (!inInp&&S.selected?.type==='node') {
+    let dx=0,dy=0;
+    if (e.key==='ArrowLeft') dx=-GRID; if (e.key==='ArrowRight') dx=GRID;
+    if (e.key==='ArrowUp') dy=-GRID; if (e.key==='ArrowDown') dy=GRID;
+    if (dx||dy) {
+      e.preventDefault(); pushHistory();
+      const ids=S.multiSelected.size>1?[...S.multiSelected]:[S.selected.id];
+      ids.forEach(id=>{const n=S.nodes.find(n=>n.id===id);if(n){n.x+=dx;n.y+=dy;}});
+      renderAll();
+    }
+  }
+});
+document.addEventListener('mousedown', e=>{ if(!$('ctx-menu').contains(e.target)) hideCtx(); });
+
+// ─── CONTEXT MENU ─────────────────────────────────────────────────────────────
+function showCtx(x,y,tgt) { S.ctxTarget=tgt; const m=$('ctx-menu'); m.style.display=''; m.style.left=x+'px'; m.style.top=y+'px'; }
+function hideCtx() { $('ctx-menu').style.display='none'; S.ctxTarget=null; }
+function ctxEdit() { hideCtx(); if(S.ctxTarget?.type==='node'||S.ctxTarget?.type==='zone') openLabelEditor(S.ctxTarget.type,S.ctxTarget.id); }
+function ctxDuplicate() { hideCtx(); if(S.ctxTarget?.type==='node') duplicateNode(S.ctxTarget.id); }
+function ctxDelete() { hideCtx(); if(S.ctxTarget) remove(S.ctxTarget.type,S.ctxTarget.id); }
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function addNode(type,x,y) {
+  pushHistory(); const id=makeNodeId();
+  S.nodes.push({id,type,x,y,label:'',notes:'',riskClass:''}); renderAll(); select('node',id);
+  toast(`${NT[type].emoji} ${NT[type].label} added`);
+}
+function addEdge(srcId,tgtId,sp,tp) {
+  if (S.edges.find(e=>e.sourceId===srcId&&e.targetId===tgtId&&e.srcPort===sp&&e.tgtPort===tp)) return;
+  pushHistory(); const id=makeEdgeId();
+  S.edges.push({id,sourceId:srcId,targetId:tgtId,srcPort:sp,tgtPort:tp,type:'generic',label:''});
+  renderAll(); select('edge',id); toast('Flow created — set type in Properties ➜');
+}
+function addZone(type,x,y,w,h) {
+  pushHistory(); const id=makeZoneId();
+  S.zones.push({id,type,x,y,w,h,label:''}); renderAll(); select('zone',id);
+  toast(`${ZT[type].label} zone added`);
+}
+function remove(type,id) {
+  pushHistory();
+  if (type==='node') { S.nodes=S.nodes.filter(n=>n.id!==id); S.edges=S.edges.filter(e=>e.sourceId!==id&&e.targetId!==id); S.multiSelected.delete(id); }
+  else if (type==='edge') S.edges=S.edges.filter(e=>e.id!==id);
+  else if (type==='zone') S.zones=S.zones.filter(z=>z.id!==id);
+  S.selected=null; renderAll(); showProps();
+}
+function deleteSelected() {
+  if (S.multiSelected.size>1) {
+    pushHistory(); const ids=new Set(S.multiSelected);
+    S.nodes=S.nodes.filter(n=>!ids.has(n.id)); S.edges=S.edges.filter(e=>!ids.has(e.sourceId)&&!ids.has(e.targetId));
+    S.multiSelected.clear(); S.selected=null; renderAll(); showProps(); toast(`${ids.size} components deleted`);
+  } else if (S.selected) remove(S.selected.type,S.selected.id);
+}
+function duplicateNode(nodeId) {
+  const src=S.nodes.find(n=>n.id===nodeId); if(!src) return; pushHistory(); const id=makeNodeId();
+  S.nodes.push({...src,id,x:src.x+GRID*2,y:src.y+GRID*2}); renderAll(); select('node',id);
+  toast(`${NT[src.type].emoji} ${NT[src.type].label} duplicated`);
+}
+function duplicateSelected() { if(S.selected?.type==='node') duplicateNode(S.selected.id); }
+function copySelected() {
+  const ids=S.multiSelected.size>1?[...S.multiSelected]:S.selected?.type==='node'?[S.selected.id]:[];
+  if (!ids.length) return; S.clipboard=ids.map(id=>({...S.nodes.find(n=>n.id===id)}));
+  toast(`${S.clipboard.length} component${S.clipboard.length>1?'s':''} copied`);
+}
+function pasteClipboard() {
+  if (!S.clipboard?.length) return; pushHistory(); const offset=GRID*3;
+  const newNodes=S.clipboard.map(n=>({...n,id:makeNodeId(),x:n.x+offset,y:n.y+offset}));
+  S.nodes.push(...newNodes); S.multiSelected.clear();
+  newNodes.forEach(n=>S.multiSelected.add(n.id)); S.selected={type:'node',id:newNodes[0].id};
+  renderAll(); showProps(); toast(`${newNodes.length} component${newNodes.length>1?'s':''} pasted`);
+}
+
+// ─── MODES ────────────────────────────────────────────────────────────────────
+function toggleConnectMode() {
+  S.connectMode=!S.connectMode; if(S.connectMode){S.placing=null;S.placingZone=null;cancelMode();S.connectMode=true;}
+  $('btnConnect').classList.toggle('active',S.connectMode);
+  hint(S.connectMode?'Connect mode: click a component to start':'');
+}
+function toggleSnap() { S.snapGrid=!S.snapGrid; $('btnSnap').classList.toggle('active',S.snapGrid); toast(S.snapGrid?'Grid snap on':'Grid snap off'); }
+
+// ─── DIAGRAM OPERATIONS ───────────────────────────────────────────────────────
+function newDiagram() {
+  if((S.nodes.length||S.zones.length)&&!confirm('Clear canvas and start a new diagram?')) return;
+  S.nodes=[];S.edges=[];S.zones=[];S.selected=null;S.multiSelected.clear();
+  S.pan={x:0,y:0};S.zoom=1;S.nid=1;S.eid=1;S.zid=1;
+  S.history=[];S.future=[]; setDirty(false); updateHistBtns(); renderAll(); showProps(); hint();
+}
+function fitView() {
+  const all=[...S.nodes.map(n=>({x:n.x,y:n.y,w:NW,h:NH})),...S.zones.map(z=>({x:z.x,y:z.y,w:z.w,h:z.h}))];
+  if (!all.length) return;
+  const pad=60,r=$('canvas-svg').getBoundingClientRect();
+  let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+  for(const i of all){mnx=Math.min(mnx,i.x);mny=Math.min(mny,i.y);mxx=Math.max(mxx,i.x+i.w);mxy=Math.max(mxy,i.y+i.h);}
+  const dw=mxx-mnx+pad*2,dh=mxy-mny+pad*2;
+  S.zoom=Math.min(r.width/dw,r.height/dh,2);
+  S.pan.x=(r.width-dw*S.zoom)/2+pad*S.zoom-mnx*S.zoom;
+  S.pan.y=(r.height-dh*S.zoom)/2+pad*S.zoom-mny*S.zoom; updateVP();
+}
+function zoomTo(f) {
+  const r=$('canvas-svg').getBoundingClientRect(),mx=r.width/2,my=r.height/2;
+  const nz=Math.max(0.15,Math.min(4,S.zoom*f));
+  S.pan.x=mx-(mx-S.pan.x)*(nz/S.zoom); S.pan.y=my-(my-S.pan.y)*(nz/S.zoom); S.zoom=nz; updateVP();
+}
+function zoomIn()  { zoomTo(1.2);   }
+function zoomOut() { zoomTo(1/1.2); }
+
+// ─── SAVE / LOAD ──────────────────────────────────────────────────────────────
+function saveDiagram() {
+  const data=JSON.stringify({nodes:S.nodes,edges:S.edges,zones:S.zones,pan:S.pan,zoom:S.zoom,meta:S.meta},null,2);
+  const blob=new Blob([data],{type:'application/json'}), url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='ai-governance-diagram.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),100); setDirty(false); toast('Diagram saved ✓');
+}
+function loadDiagram() { $('file-input').click(); }
+function validateData(data) {
+  if (typeof data!=='object'||data===null) throw new Error('Not a valid diagram file');
+  if (!Array.isArray(data.nodes)) throw new Error('Missing nodes array');
+  for (const n of data.nodes) {
+    if (typeof n.id!=='string') throw new Error('Node missing id');
+    if (!NT[n.type]) throw new Error(`Unknown component type: ${n.type}`);
+    if (typeof n.x!=='number'||typeof n.y!=='number') throw new Error('Node missing coordinates');
+  }
+  if (!Array.isArray(data.edges)) throw new Error('Missing edges array');
+  const nodeIds=new Set(data.nodes.map(n=>n.id));
+  for (const e of data.edges) {
+    if (!nodeIds.has(e.sourceId)) throw new Error(`Edge source not found: ${e.sourceId}`);
+    if (!nodeIds.has(e.targetId)) throw new Error(`Edge target not found: ${e.targetId}`);
+  }
+  if (data.zones!==undefined&&!Array.isArray(data.zones)) throw new Error('Zones must be an array');
+}
+function onFileLoad(ev) {
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const data=JSON.parse(e.target.result); validateData(data);
+      S.nodes=data.nodes; S.edges=data.edges; S.zones=Array.isArray(data.zones)?data.zones:[];
+      S.pan=data.pan||{x:0,y:0}; S.zoom=data.zoom||1;
+      S.meta=data.meta||{narrative:'',version:'1.0',versions:[]};
+      S.nid=S.nodes.reduce((m,n)=>Math.max(m,parseInt(n.id.slice(1))||0),0)+1;
+      S.eid=S.edges.reduce((m,e)=>Math.max(m,parseInt(e.id.slice(1))||0),0)+1;
+      S.zid=S.zones.reduce((m,z)=>Math.max(m,parseInt(z.id.slice(1))||0),0)+1;
+      S.selected=null; S.multiSelected.clear(); S.history=[]; S.future=[];
+      setDirty(false); updateHistBtns(); renderAll(); showProps(); toast('Diagram loaded ✓');
+    } catch(err) { toast(`Failed to load — ${err.message||'invalid file'}`); }
+  };
+  reader.readAsText(file); ev.target.value='';
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function getCleanSVG() {
+  const orig=$('canvas-svg'), cl=orig.cloneNode(true);
+  const bg=document.createElementNS(NS,'rect'); bg.setAttribute('width','100%'); bg.setAttribute('height','100%'); bg.setAttribute('fill','#f8fafc');
+  cl.insertBefore(bg,cl.firstChild);
+  cl.querySelectorAll('#rubber-band,.port,.sel-ring,.node-hit,.edge-hit,#box-select-rect,#zone-preview-rect,.zone-ring-rect').forEach(el=>el.remove());
+  const r=orig.getBoundingClientRect(); cl.setAttribute('width',r.width); cl.setAttribute('height',r.height);
+  return {svgStr:new XMLSerializer().serializeToString(cl),w:r.width,h:r.height};
+}
+function downloadBlob(blob,filename) {
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),150);
+}
+function exportSVG() { const{svgStr}=getCleanSVG(); downloadBlob(new Blob([svgStr],{type:'image/svg+xml'}),'ai-governance-diagram.svg'); toast('SVG exported ✓'); }
+function exportPNG() {
+  const{svgStr,w,h}=getCleanSVG(), url=URL.createObjectURL(new Blob([svgStr],{type:'image/svg+xml'})), img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas'),sc=2; c.width=w*sc; c.height=h*sc;
+    const ctx=c.getContext('2d'); ctx.scale(sc,sc); ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    const [hdr,dat]=c.toDataURL('image/png').split(','), mime=hdr.match(/:(.*?);/)[1], bytes=atob(dat), arr=new Uint8Array(bytes.length);
+    for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    downloadBlob(new Blob([arr],{type:mime}),'ai-governance-diagram.png'); toast('PNG exported ✓');
+  };
+  img.onerror=()=>{toast('PNG export failed — try SVG');URL.revokeObjectURL(url);};
+  img.src=url;
+}
+function exportPDF() {
+  const{svgStr}=getCleanSVG();
+  const narrative=S.meta.narrative?`<p style="font-size:11px;color:#374151;line-height:1.6;white-space:pre-wrap;margin-bottom:16px">${esc(S.meta.narrative)}</p>`:'';
+  const version=S.meta.version?`<span style="font-size:10px;background:#f5f3ff;color:#6d28d9;border-radius:10px;padding:1px 8px;font-weight:700">v${esc(S.meta.version)}</span>`:'';
+  const win=window.open('','_blank'); if(!win){toast('Allow pop-ups for PDF export');return;}
+  win.document.write(`<!DOCTYPE html><html><head><title>AI Governance Data Flow Diagram</title>
+  <style>body{margin:24px 32px;font-family:'Segoe UI',sans-serif;background:#fff;}h2{font-size:16px;margin-bottom:4px;color:#0f172a;display:flex;align-items:center;gap:10px;}.meta{font-size:10px;color:#64748b;margin-bottom:12px;}svg{max-width:100%;border:1px solid #e2e8f0;border-radius:6px;display:block;}.nar-hdr{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 4px;}.btn{margin-top:18px;padding:8px 18px;background:#0f172a;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;}@media print{.btn{display:none;}body{margin:12px;}}</style></head><body>
+  <h2>AI Governance &amp; Data Flow Diagram ${version}</h2>
+  <div class="meta">Generated: ${new Date().toLocaleDateString()} &nbsp;·&nbsp; AI Governance Documentation</div>
+  ${svgStr}
+  ${S.meta.narrative?`<div class="nar-hdr">System Narrative</div>${narrative}`:''}
+  <button class="btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </body></html>`);
+  win.document.close(); toast('Print window opened ✓');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function loadSampleDiagram() {
+  // Trust boundary zone
+  S.zones.push({id:makeZoneId(),type:'trust_boundary',x:176,y:-66,w:484,h:330,label:'Internal AI System Boundary'});
+  // PII zone
+  S.zones.push({id:makeZoneId(),type:'pii_zone',x:176,y:-66,w:220,h:180,label:'PII Processing'});
+  // High-risk zone
+  S.zones.push({id:makeZoneId(),type:'high_risk',x:506,y:88,w:154,h:170,label:'High-Risk AI'});
+
+  const eu = {id:makeNodeId(),type:'end_user',       x:0,   y:88,  label:'End User',           notes:'', riskClass:''};
+  const ag = {id:makeNodeId(),type:'api_gateway',    x:176, y:88,  label:'API Gateway',         notes:'', riskClass:''};
+  const pp = {id:makeNodeId(),type:'pii_detector',   x:176, y:-22, label:'PII Redactor',        notes:'', riskClass:''};
+  const mp = {id:makeNodeId(),type:'model_provider', x:352, y:-22, label:'LLM API (ext.)',       notes:'', riskClass:''};
+  const cf = {id:makeNodeId(),type:'content_filter', x:352, y:88,  label:'Output Guardrail',    notes:'', riskClass:''};
+  const al = {id:makeNodeId(),type:'audit_log',      x:352, y:198, label:'Audit Log',           notes:'', riskClass:''};
+  const ad = {id:makeNodeId(),type:'automated_decision',x:528,y:88, label:'Risk Decision Engine',notes:'', riskClass:'High Risk (EU AI Act)'};
+  const hl = {id:makeNodeId(),type:'hitl',           x:528, y:198, label:'Compliance Review',   notes:'', riskClass:''};
+  S.nodes.push(eu,ag,pp,mp,cf,al,ad,hl);
+
+  S.edges.push(
+    {id:makeEdgeId(),sourceId:eu.id,targetId:ag.id, srcPort:'e',tgtPort:'w',type:'inference_req',  label:'User Query'},
+    {id:makeEdgeId(),sourceId:ag.id,targetId:pp.id, srcPort:'n',tgtPort:'s',type:'pii',            label:'Input + PII'},
+    {id:makeEdgeId(),sourceId:pp.id,targetId:mp.id, srcPort:'e',tgtPort:'w',type:'inference_req',  label:'Redacted Prompt'},
+    {id:makeEdgeId(),sourceId:mp.id,targetId:cf.id, srcPort:'s',tgtPort:'n',type:'inference_resp', label:'Raw Output'},
+    {id:makeEdgeId(),sourceId:cf.id,targetId:ag.id, srcPort:'w',tgtPort:'e',type:'inference_resp', label:'Filtered Response'},
+    {id:makeEdgeId(),sourceId:cf.id,targetId:al.id, srcPort:'s',tgtPort:'n',type:'audit',          label:''},
+    {id:makeEdgeId(),sourceId:cf.id,targetId:ad.id, srcPort:'e',tgtPort:'w',type:'inference_resp', label:'Risk Signal'},
+    {id:makeEdgeId(),sourceId:ad.id,targetId:hl.id, srcPort:'s',tgtPort:'n',type:'human_review',   label:'Flagged Cases'},
+  );
+  renderAll(); fitView();
+  setTimeout(()=>{
+    hint('👋 Sample AI governance diagram loaded! Drag from port dots to connect • Shift+drag to multi-select • Double-click to edit labels');
+    setTimeout(()=>hint(),9000);
+  },300);
+}
+
+function init() {
+  initDefs(); buildSidebar(); updateVP(); updateHistBtns();
+  const ro=new ResizeObserver(entries=>{
+    const r=entries[0].contentRect;
+    if (r.width>0&&r.height>0) { ro.disconnect(); S.pan={x:r.width/2-370,y:r.height/2-140}; updateVP(); loadSampleDiagram(); }
+  });
+  ro.observe($('canvas-svg'));
+}
+
+init();
+</script>
+</body>
+</html>
